@@ -1,0 +1,20 @@
+ID,Objective,Preconditions,Action,Expected result,Actual,Status
+FT-01,Valid registration,Admin issued code,Register with valid code and signature,"Device stored, AUTHORIZED","Device stored, AUTHORIZED",PASS
+FT-02,ML-KEM session key agreement,Authorized device,Perform session establishment and derive HKDF key,Matching keys; session ACTIVE,Identical session keys on both sides,PASS
+FT-03,Message round-trip,Active session,"Encrypt & decrypt 128B, 1KiB, 10KiB payloads",Plaintext recovered without corruption,All payload sizes round-trip successfully,PASS
+FT-04,Session metadata storage,Active session,Inspect database records,Correct metadata; no key bytes in DB,Metadata stored; 0 key bytes in DB,PASS
+FT-05,Dashboard state consistency,Running server,Query /state and /audit vs SQLite direct,Dashboard values match DB queries,Exact match; hash chain intact,PASS
+ST-01,Valid registration,Admin issued code,Register with valid code and signature,"Device stored, AUTHORIZED","Device stored, AUTHORIZED",PASS
+ST-02,Reject unauthorized device,No code / unknown ID,Register or request session,"Rejected, audited","Rejected (400), audited",PASS
+ST-03,Reject impersonation,Device A registered,Session request signed with another key,"Rejected, audited","Rejected (400/403), audited",PASS
+ST-04,ML-KEM session establishment,Authorized device,Run session procedure,Matching keys; session ACTIVE,"Matching keys, session ACTIVE",PASS
+ST-05,Reject tampered ciphertext,Active session,Flip one ciphertext bit,"Tag failure, rejected","Tag failure (InvalidTag), rejected",PASS
+ST-06,Reject invalid ML-DSA signature,Registered device,Alter a signed field,"Verification fails, rejected","Verification fails, rejected",PASS
+ST-07,Reject expired key,Short lifetime,Send after expiry,"Rejected, audited","Expired key rejected (400), audited",PASS
+ST-08,Key rotation,Lifetime elapses,Continue messaging,New session; old key unusable,New session active; old key unusable,PASS
+ST-09,Reject revoked device,Admin revokes,Device sends message or session request,"Rejected, audited","Revoked device rejected (403), audited",PASS
+ST-10,Signed revocation list,List issued,"Verify valid, then altered list; then older version",Valid accepted; altered and older rejected,Valid accepted; altered & older rejected,PASS
+ST-11,Revocation side effects,Active sessions exist,Revoke device,Sessions COMPROMISED then DESTROYED; event logged,Sessions COMPROMISED then DESTROYED; logged,PASS
+ST-12,Replay detection,Active session,Resend captured message,Rejected as replay,Rejected as replay (monotonic counter check),PASS
+ST-13,Malformed KEM inputs,Authorized device,Send ciphertext or key of wrong length,Rejected; no crash; no session,Rejected on length check; no crash,PASS
+ST-14,Cross-context signature,Valid registration signature,Present it as a session request,Rejected (context mismatch),Rejected (context mismatch),PASS

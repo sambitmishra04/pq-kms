@@ -1,0 +1,3 @@
+experiment,path,rss_before_kb,rss_after_kb,rss_delta_kb,tracemalloc_bytes,note
+E6,PQC,193388.0,193392.0,4.0,24064,tracemalloc does not capture C-library allocations
+E6,Classical,193392.0,193392.0,0.0,1029,tracemalloc does not capture C-library allocations

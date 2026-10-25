@@ -1,0 +1,14 @@
+{
+  "cpu": "x86_64",
+  "cpu_cores": 10,
+  "cpu_logical": 12,
+  "ram_gb": 16.4,
+  "os": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "python_version": "3.14.6",
+  "liboqs_version": "0.16.0",
+  "cryptography_version": "50.0.2",
+  "kem_algorithm": "ML-KEM-768",
+  "sig_algorithm": "ML-DSA-65",
+  "warmup_trials": 50,
+  "measured_trials": 1000
+}
