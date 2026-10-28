@@ -57,21 +57,44 @@ case "$cmd" in
     cd "$PROJ"
     python experiments/download_data.py
     ;;
+  demo)
+    activate
+    cd "$PROJ"
+    echo "[Demo] Running live evaluator presentation demo..."
+    python experiments/run_live_demo.py
+    ;;
+  slides)
+    echo "[Slides] Presentation slide deck ready at:"
+    echo "  file://$PROJ/results/presentation/index.html"
+    echo "Open the above file in your web browser (Chrome/Firefox/Edge) for the defense presentation."
+    ;;
+  report)
+    activate
+    cd "$PROJ"
+    echo "[Report] Generating publication-quality LaTeX Chapter 8..."
+    python experiments/generate_latex_report.py
+    echo "[Report] Chapter 8 LaTeX generated at: results/latex/chapter8_results.tex"
+    ;;
   all)
     bash "$0" test
     bash "$0" bench
+    bash "$0" report
     echo "[All] Done. Start server with: bash run.sh server"
     echo "      Start dashboard with: bash run.sh dashboard"
+    echo "      View presentation:    bash run.sh slides"
     ;;
   *)
-    echo "Usage: bash run.sh [setup|server|test|bench|dashboard|data|all]"
+    echo "Usage: bash run.sh [setup|server|test|bench|dashboard|data|demo|slides|report|all]"
     echo ""
     echo "  setup      — create venv, install dependencies, download data"
     echo "  server     — start the FastAPI PQ-KMS server"
-    echo "  test       — run full pytest security + functional test suite"
+    echo "  test       — run full pytest security + functional test suite (23 tests)"
     echo "  bench      — run all benchmark experiments, generate tables & figures"
-    echo "  dashboard  — start the Streamlit monitoring dashboard"
+    echo "  dashboard  — start the Streamlit Medical SOC & Biochip simulator dashboard"
     echo "  data       — download/generate biomedical vitals data"
-    echo "  all        — run tests + benchmarks"
+    echo "  demo       — run one-click automated live evaluator demonstration"
+    echo "  slides     — display location of interactive presentation slide deck"
+    echo "  report     — generate publication-ready LaTeX Chapter 8"
+    echo "  all        — run tests + benchmarks + report"
     ;;
 esac

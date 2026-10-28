@@ -63,12 +63,12 @@ def revoke_device(
     prev_revoked = existing_crl["device_ids"] if existing_crl else []
 
     new_version = prev_version + 1
-    all_revoked = list(set(prev_revoked + [device_id]))
+    all_revoked = sorted(set(prev_revoked + [device_id]))
 
     crl_data = {
         "version": new_version,
         "issued_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "device_ids": sorted(all_revoked),
+        "device_ids": all_revoked,
     }
     crl_bytes = _encode_crl(crl_data)
     signature = sig_sign(server_signing_key, crl_bytes, CTX_REV, sig_algorithm)
