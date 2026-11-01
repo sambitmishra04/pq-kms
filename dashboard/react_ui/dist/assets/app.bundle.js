@@ -283,6 +283,26 @@ const Icons = {
     y1: "6",
     y2: "18"
   })),
+  plus: p => /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24",
+    width: p.size || 18,
+    height: p.size || 18,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, p), /*#__PURE__*/React.createElement("line", {
+    x1: "12",
+    y1: "5",
+    x2: "12",
+    y2: "19"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "5",
+    y1: "12",
+    x2: "19",
+    y2: "12"
+  })),
   zoom: p => /*#__PURE__*/React.createElement("svg", _extends({
     viewBox: "0 0 24 24",
     width: p.size || 18,
@@ -303,8 +323,8 @@ const Icons = {
     y2: "16.65"
   }), /*#__PURE__*/React.createElement("line", {
     x1: "11",
-    x2: "11",
     y1: "8",
+    x2: "11",
     y2: "14"
   }), /*#__PURE__*/React.createElement("line", {
     x1: "8",
@@ -508,6 +528,14 @@ function App() {
   const [selectedFigure, setSelectedFigure] = useState(null);
   const [hashVerificationStatus, setHashVerificationStatus] = useState(null);
 
+  // Device Provisioning State
+  const [provisionModalOpen, setProvisionModalOpen] = useState(false);
+  const [newDeviceId, setNewDeviceId] = useState('');
+  const [newDeviceRole, setNewDeviceRole] = useState('CLINICAL_ANALYZER');
+  const [provisionLoading, setProvisionLoading] = useState(false);
+  const [provisionResult, setProvisionResult] = useState(null);
+  const [provisionError, setProvisionError] = useState(null);
+
   // Pagination states
   const [devicePage, setDevicePage] = useState(1);
   const [sessionPage, setSessionPage] = useState(1);
@@ -582,6 +610,37 @@ function App() {
       setHashVerificationStatus({
         status: 'Error during verification'
       });
+    }
+  };
+
+  // Device Provisioning Handler
+  const handleProvisionDevice = async e => {
+    if (e) e.preventDefault();
+    const devId = newDeviceId.trim() || `DMFB-LAB-${Math.floor(1000 + Math.random() * 9000)}`;
+    setProvisionLoading(true);
+    setProvisionError(null);
+    setProvisionResult(null);
+    try {
+      const res = await fetch('/api/devices/provision', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          device_id: devId,
+          role: newDeviceRole
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Failed to provision device');
+      }
+      setProvisionResult(data);
+      fetchAllData();
+    } catch (err) {
+      setProvisionError(err.message);
+    } finally {
+      setProvisionLoading(false);
     }
   };
 
@@ -1183,7 +1242,35 @@ function App() {
       fontWeight: 600,
       cursor: 'pointer'
     }
-  }, st)))), /*#__PURE__*/React.createElement("button", {
+  }, st)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setProvisionModalOpen(true);
+      setProvisionResult(null);
+      setProvisionError(null);
+    },
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      padding: '7px 14px',
+      borderRadius: 8,
+      background: '#06b6d4',
+      color: '#090d16',
+      border: 'none',
+      fontSize: '0.8rem',
+      fontWeight: 700,
+      cursor: 'pointer',
+      boxShadow: '0 4px 12px rgba(6, 182, 212, 0.25)'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.plus, {
+    size: 14
+  }), "Provision New Biochip"), /*#__PURE__*/React.createElement("button", {
     onClick: () => exportToCsv('devices_registry', filteredDevices),
     style: {
       display: 'flex',
@@ -1200,7 +1287,7 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement(Icons.download, {
     size: 14
-  }), "Export CSV (", filteredDevices.length, ")")), /*#__PURE__*/React.createElement("div", {
+  }), "Export CSV (", filteredDevices.length, ")"))), /*#__PURE__*/React.createElement("div", {
     className: "glass-card",
     style: {
       overflow: 'hidden'
@@ -1233,7 +1320,7 @@ function App() {
       fontSize: '0.78rem',
       color: '#94a3b8'
     }
-  }, dev.registered_at || '—'), /*#__PURE__*/React.createElement("td", {
+  }, dev.enrolled_at || dev.registered_at || '—'), /*#__PURE__*/React.createElement("td", {
     className: "font-mono",
     style: {
       fontSize: '0.78rem',
@@ -2582,7 +2669,363 @@ function App() {
       padding: 32,
       color: '#64748b'
     }
-  }, "Run ", /*#__PURE__*/React.createElement("code", null, "pytest tests/"), " to populate security test cases.")))))))), envModalOpen && /*#__PURE__*/React.createElement("div", {
+  }, "Run ", /*#__PURE__*/React.createElement("code", null, "pytest tests/"), " to populate security test cases.")))))))), provisionModalOpen && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0, 0, 0, 0.75)',
+      backdropFilter: 'blur(8px)',
+      zIndex: 100,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "glass-card",
+    style: {
+      width: '100%',
+      maxWidth: 600,
+      background: '#0f172a',
+      border: '1px solid rgba(148, 163, 184, 0.25)',
+      borderRadius: 16,
+      overflow: 'hidden'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '16px 20px',
+      borderBottom: '1px solid rgba(148, 163, 184, 0.15)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 6,
+      background: 'rgba(6, 182, 212, 0.15)',
+      borderRadius: 8,
+      color: '#06b6d4'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.plus, {
+    size: 18
+  })), /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: '1rem',
+      fontWeight: 800,
+      color: '#f8fafc'
+    }
+  }, "Provision & Register New Biochip (Algorithm 1)")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setProvisionModalOpen(false),
+    style: {
+      background: 'transparent',
+      border: 'none',
+      color: '#94a3b8',
+      cursor: 'pointer'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.x, {
+    size: 18
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 20
+    }
+  }, !provisionResult ? /*#__PURE__*/React.createElement("form", {
+    onSubmit: handleProvisionDevice
+  }, /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '0.82rem',
+      color: '#94a3b8',
+      lineHeight: 1.5,
+      marginBottom: 16
+    }
+  }, "Generates an out-of-band one-time enrolment code, local ", /*#__PURE__*/React.createElement("strong", null, "ML-KEM-768"), " (FIPS 203) & ", /*#__PURE__*/React.createElement("strong", null, "ML-DSA-65"), " (FIPS 204) post-quantum keypairs, signs proof-of-possession, and registers the node in the hardware registry."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: 'block',
+      fontSize: '0.78rem',
+      fontWeight: 600,
+      color: '#cbd5e1',
+      marginBottom: 6
+    }
+  }, "Device ID (e.g. DMFB-LAB-01, DMFB-ICU-04):"), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    placeholder: "e.g. DMFB-LAB-01",
+    value: newDeviceId,
+    onChange: e => setNewDeviceId(e.target.value),
+    required: true,
+    style: {
+      width: '100%',
+      background: 'rgba(30, 41, 59, 0.7)',
+      border: '1px solid rgba(148, 163, 184, 0.25)',
+      borderRadius: 8,
+      padding: '10px 12px',
+      color: '#f8fafc',
+      fontFamily: 'JetBrains Mono',
+      fontSize: '0.85rem',
+      outline: 'none'
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 18
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: 'block',
+      fontSize: '0.78rem',
+      fontWeight: 600,
+      color: '#cbd5e1',
+      marginBottom: 6
+    }
+  }, "Assigned Medical Role:"), /*#__PURE__*/React.createElement("select", {
+    value: newDeviceRole,
+    onChange: e => setNewDeviceRole(e.target.value),
+    style: {
+      width: '100%',
+      background: 'rgba(30, 41, 59, 0.7)',
+      border: '1px solid rgba(148, 163, 184, 0.25)',
+      borderRadius: 8,
+      padding: '10px 12px',
+      color: '#f8fafc',
+      fontSize: '0.85rem',
+      outline: 'none'
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "CLINICAL_ANALYZER"
+  }, "CLINICAL_ANALYZER (Multiplex diagnostic sensor)"), /*#__PURE__*/React.createElement("option", {
+    value: "GLUCOSE_MONITOR"
+  }, "GLUCOSE_MONITOR (Enzymatic blood assay)"), /*#__PURE__*/React.createElement("option", {
+    value: "ELECTROLYTE_SENSOR"
+  }, "ELECTROLYTE_SENSOR (ISE ion detection)"), /*#__PURE__*/React.createElement("option", {
+    value: "BIOCHIP_NODE"
+  }, "BIOCHIP_NODE (Standard DMFB droplet grid)"), /*#__PURE__*/React.createElement("option", {
+    value: "INSULIN_ACTUATOR"
+  }, "INSULIN_ACTUATOR (Critical closed-loop delivery)"))), provisionError && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(244, 63, 94, 0.15)',
+      border: '1px solid rgba(244, 63, 94, 0.3)',
+      padding: 10,
+      borderRadius: 8,
+      color: '#fb7185',
+      fontSize: '0.8rem',
+      marginBottom: 14
+    }
+  }, "\u274C ", provisionError), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'flex-end',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setProvisionModalOpen(false),
+    style: {
+      padding: '8px 16px',
+      borderRadius: 8,
+      background: 'rgba(30, 41, 59, 0.8)',
+      color: '#cbd5e1',
+      border: '1px solid rgba(148, 163, 184, 0.2)',
+      cursor: 'pointer',
+      fontSize: '0.82rem'
+    }
+  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+    type: "submit",
+    disabled: provisionLoading,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      padding: '8px 18px',
+      borderRadius: 8,
+      background: '#06b6d4',
+      color: '#090d16',
+      fontWeight: 700,
+      border: 'none',
+      cursor: provisionLoading ? 'not-allowed' : 'pointer',
+      fontSize: '0.82rem'
+    }
+  }, provisionLoading ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Icons.refresh, {
+    size: 14,
+    className: "live-pulse"
+  }), "Generating Quantum Keys...") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Icons.key, {
+    size: 14
+  }), "Generate Quantum Keys & Register")))) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      background: 'rgba(16, 185, 129, 0.1)',
+      border: '1px solid rgba(16, 185, 129, 0.25)',
+      padding: 12,
+      borderRadius: 8,
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement(Icons.check, {
+    size: 22,
+    style: {
+      color: '#34d399'
+    }
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: '#34d399',
+      fontWeight: 800,
+      fontSize: '0.95rem'
+    }
+  }, "Device Provisioned & Authorized Successfully!"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: '#94a3b8',
+      fontSize: '0.75rem',
+      marginTop: 2
+    }
+  }, "Registered in SQLite registry and bound to hash-chained tamper-evident audit log."))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 10,
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(30, 41, 59, 0.5)',
+      padding: 10,
+      borderRadius: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.72rem',
+      color: '#94a3b8',
+      textTransform: 'uppercase'
+    }
+  }, "Device ID"), /*#__PURE__*/React.createElement("div", {
+    className: "font-mono",
+    style: {
+      fontWeight: 700,
+      color: '#38bdf8',
+      marginTop: 2
+    }
+  }, provisionResult.device_id)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(30, 41, 59, 0.5)',
+      padding: 10,
+      borderRadius: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.72rem',
+      color: '#94a3b8',
+      textTransform: 'uppercase'
+    }
+  }, "Assigned Role"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 600,
+      color: '#f8fafc',
+      marginTop: 2
+    }
+  }, provisionResult.role))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(15, 23, 42, 0.8)',
+      padding: 12,
+      borderRadius: 8,
+      border: '1px solid rgba(148, 163, 184, 0.1)',
+      marginBottom: 10,
+      fontSize: '0.78rem'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: '#94a3b8',
+      marginBottom: 2
+    }
+  }, "One-Time Enrolment Code:"), /*#__PURE__*/React.createElement("div", {
+    className: "font-mono",
+    style: {
+      color: '#fbbf24',
+      wordBreak: 'break-all'
+    }
+  }, provisionResult.enrolment_code)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(15, 23, 42, 0.8)',
+      padding: 12,
+      borderRadius: 8,
+      border: '1px solid rgba(148, 163, 184, 0.1)',
+      marginBottom: 10,
+      fontSize: '0.78rem'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      color: '#94a3b8',
+      marginBottom: 2
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "ML-KEM-768 Public Key:"), /*#__PURE__*/React.createElement("span", {
+    className: "font-mono",
+    style: {
+      color: '#34d399'
+    }
+  }, provisionResult.kem_pk_len, " bytes")), /*#__PURE__*/React.createElement("div", {
+    className: "font-mono",
+    style: {
+      color: '#38bdf8',
+      wordBreak: 'break-all',
+      fontSize: '0.72rem'
+    }
+  }, provisionResult.kem_pk_preview)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(15, 23, 42, 0.8)',
+      padding: 12,
+      borderRadius: 8,
+      border: '1px solid rgba(148, 163, 184, 0.1)',
+      marginBottom: 16,
+      fontSize: '0.78rem'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      color: '#94a3b8',
+      marginBottom: 2
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "ML-DSA-65 Verification Key:"), /*#__PURE__*/React.createElement("span", {
+    className: "font-mono",
+    style: {
+      color: '#34d399'
+    }
+  }, provisionResult.sig_pk_len, " bytes")), /*#__PURE__*/React.createElement("div", {
+    className: "font-mono",
+    style: {
+      color: '#38bdf8',
+      wordBreak: 'break-all',
+      fontSize: '0.72rem'
+    }
+  }, provisionResult.sig_pk_preview)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'flex-end',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setProvisionResult(null);
+      setProvisionModalOpen(false);
+    },
+    style: {
+      padding: '8px 18px',
+      borderRadius: 8,
+      background: '#06b6d4',
+      color: '#090d16',
+      fontWeight: 700,
+      border: 'none',
+      cursor: 'pointer',
+      fontSize: '0.82rem'
+    }
+  }, "Close & View in Registry")))))), envModalOpen && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'fixed',
       inset: 0,

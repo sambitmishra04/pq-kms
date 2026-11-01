@@ -26,6 +26,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from app.config import (
     DATABASE_PATH,
@@ -125,6 +126,50 @@ def get_devices():
         "status_counts": status_counts,
         "devices": sanitized,
     }
+
+
+class ProvisionDeviceRequest(BaseModel):
+    device_id: str
+    role: str = "BIOCHIP_NODE"
+
+
+@app.post("/api/devices/provision")
+def provision_device_api(req: ProvisionDeviceRequest):
+    """Admin/Evaluator provisions a new biochip and generates post-quantum keys (Algorithm 1)."""
+    device_id = req.device_id.strip()
+    if not device_id:
+        raise HTTPException(status_code=400, detail="Device ID cannot be empty")
+
+    from app.config import CTX_REG, KEM_ALG, SIG_ALG
+    from app.crypto.kem import generate_kem_keypair
+    from app.crypto.sig import generate_sig_keypair, sign as sig_sign
+    from app.device_management.registry import create_enrolment_code, register_device
+
+    try:
+        code = create_enrolment_code(device_id, role=req.role)
+        kem_pk, _ = generate_kem_keypair(KEM_ALG)
+        sig_pk, sig_sk = generate_sig_keypair(SIG_ALG)
+        msg = device_id.encode("utf-8") + kem_pk + sig_pk
+        proof_sig = sig_sign(sig_sk, msg, CTX_REG, SIG_ALG)
+        register_device(device_id, code, kem_pk, sig_pk, proof_sig, SIG_ALG)
+
+        dev = get_database().get_device(device_id)
+        return {
+            "status": "SUCCESS",
+            "device_id": device_id,
+            "role": req.role,
+            "device_status": dev["status"] if dev else "AUTHORIZED",
+            "enrolment_code": code,
+            "kem_alg": KEM_ALG,
+            "kem_pk_preview": kem_pk.hex()[:32] + "...",
+            "kem_pk_len": len(kem_pk),
+            "sig_alg": SIG_ALG,
+            "sig_pk_preview": sig_pk.hex()[:32] + "...",
+            "sig_pk_len": len(sig_pk),
+            "proof_sig_len": len(proof_sig),
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 @app.get("/api/sessions")

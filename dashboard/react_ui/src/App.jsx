@@ -16,7 +16,8 @@ const Icons = {
   cpu: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9"/><path d="M15 2v2M9 2v2M20 15h2M20 9h2M9 20v2M15 20v2M2 9h2M2 15h2"/></svg>,
   download: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
   x: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>,
-  zoom: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" x2="11" y1="8" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/></svg>,
+  plus: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  zoom: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/></svg>,
 };
 
 // ─── Chart Component Wrapper ──────────────────────────────────────────────────
@@ -165,6 +166,14 @@ export default function App() {
   const [selectedFigure, setSelectedFigure] = useState(null);
   const [hashVerificationStatus, setHashVerificationStatus] = useState(null);
 
+  // Device Provisioning State
+  const [provisionModalOpen, setProvisionModalOpen] = useState(false);
+  const [newDeviceId, setNewDeviceId] = useState('');
+  const [newDeviceRole, setNewDeviceRole] = useState('CLINICAL_ANALYZER');
+  const [provisionLoading, setProvisionLoading] = useState(false);
+  const [provisionResult, setProvisionResult] = useState(null);
+  const [provisionError, setProvisionError] = useState(null);
+
   // Pagination states
   const [devicePage, setDevicePage] = useState(1);
   const [sessionPage, setSessionPage] = useState(1);
@@ -223,6 +232,33 @@ export default function App() {
       fetchAllData();
     } catch (err) {
       setHashVerificationStatus({ status: 'Error during verification' });
+    }
+  };
+
+  // Device Provisioning Handler
+  const handleProvisionDevice = async (e) => {
+    if (e) e.preventDefault();
+    const devId = newDeviceId.trim() || `DMFB-LAB-${Math.floor(1000 + Math.random() * 9000)}`;
+    setProvisionLoading(true);
+    setProvisionError(null);
+    setProvisionResult(null);
+
+    try {
+      const res = await fetch('/api/devices/provision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: devId, role: newDeviceRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Failed to provision device');
+      }
+      setProvisionResult(data);
+      fetchAllData();
+    } catch (err) {
+      setProvisionError(err.message);
+    } finally {
+      setProvisionLoading(false);
     }
   };
 
@@ -579,7 +615,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Search, Filter & Export Toolbar */}
+            {/* Search, Filter & Provision Toolbar */}
             <div className="glass-card" style={{ padding: '16px 20px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 260 }}>
                 <div style={{ position: 'relative', width: '100%', maxWidth: 360 }}>
@@ -626,25 +662,49 @@ export default function App() {
                 </div>
               </div>
 
-              <button
-                onClick={() => exportToCsv('devices_registry', filteredDevices)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '7px 14px',
-                  borderRadius: 8,
-                  background: 'rgba(30, 41, 59, 0.8)',
-                  color: '#cbd5e1',
-                  border: '1px solid rgba(148, 163, 184, 0.2)',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                <Icons.download size={14} />
-                Export CSV ({filteredDevices.length})
-              </button>
+              {/* Action Buttons: Add Device & Export CSV */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  onClick={() => { setProvisionModalOpen(true); setProvisionResult(null); setProvisionError(null); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '7px 14px',
+                    borderRadius: 8,
+                    background: '#06b6d4',
+                    color: '#090d16',
+                    border: 'none',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(6, 182, 212, 0.25)',
+                  }}
+                >
+                  <Icons.plus size={14} />
+                  Provision New Biochip
+                </button>
+
+                <button
+                  onClick={() => exportToCsv('devices_registry', filteredDevices)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '7px 14px',
+                    borderRadius: 8,
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    color: '#cbd5e1',
+                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Icons.download size={14} />
+                  Export CSV ({filteredDevices.length})
+                </button>
+              </div>
             </div>
 
             {/* Devices Table */}
@@ -677,7 +737,7 @@ export default function App() {
                           <Badge status={dev.status} />
                         </td>
                         <td className="font-mono" style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                          {dev.registered_at || '—'}
+                          {dev.enrolled_at || dev.registered_at || '—'}
                         </td>
                         <td className="font-mono" style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
                           {dev.last_seen || '—'}
@@ -1530,6 +1590,190 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* ─── MODAL: Provision New Biochip Device ──────────────────────────── */}
+      {provisionModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(8px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: 600, background: '#0f172a', border: '1px solid rgba(148, 163, 184, 0.25)', borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(148, 163, 184, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ padding: 6, background: 'rgba(6, 182, 212, 0.15)', borderRadius: 8, color: '#06b6d4' }}>
+                  <Icons.plus size={18} />
+                </div>
+                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc' }}>
+                  Provision & Register New Biochip (Algorithm 1)
+                </h3>
+              </div>
+              <button onClick={() => setProvisionModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                <Icons.x size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: 20 }}>
+              {!provisionResult ? (
+                <form onSubmit={handleProvisionDevice}>
+                  <p style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: 16 }}>
+                    Generates an out-of-band one-time enrolment code, local <strong>ML-KEM-768</strong> (FIPS 203) & <strong>ML-DSA-65</strong> (FIPS 204) post-quantum keypairs, signs proof-of-possession, and registers the node in the hardware registry.
+                  </p>
+
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#cbd5e1', marginBottom: 6 }}>
+                      Device ID (e.g. DMFB-LAB-01, DMFB-ICU-04):
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. DMFB-LAB-01"
+                      value={newDeviceId}
+                      onChange={e => setNewDeviceId(e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        background: 'rgba(30, 41, 59, 0.7)',
+                        border: '1px solid rgba(148, 163, 184, 0.25)',
+                        borderRadius: 8,
+                        padding: '10px 12px',
+                        color: '#f8fafc',
+                        fontFamily: 'JetBrains Mono',
+                        fontSize: '0.85rem',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#cbd5e1', marginBottom: 6 }}>
+                      Assigned Medical Role:
+                    </label>
+                    <select
+                      value={newDeviceRole}
+                      onChange={e => setNewDeviceRole(e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: 'rgba(30, 41, 59, 0.7)',
+                        border: '1px solid rgba(148, 163, 184, 0.25)',
+                        borderRadius: 8,
+                        padding: '10px 12px',
+                        color: '#f8fafc',
+                        fontSize: '0.85rem',
+                        outline: 'none',
+                      }}
+                    >
+                      <option value="CLINICAL_ANALYZER">CLINICAL_ANALYZER (Multiplex diagnostic sensor)</option>
+                      <option value="GLUCOSE_MONITOR">GLUCOSE_MONITOR (Enzymatic blood assay)</option>
+                      <option value="ELECTROLYTE_SENSOR">ELECTROLYTE_SENSOR (ISE ion detection)</option>
+                      <option value="BIOCHIP_NODE">BIOCHIP_NODE (Standard DMFB droplet grid)</option>
+                      <option value="INSULIN_ACTUATOR">INSULIN_ACTUATOR (Critical closed-loop delivery)</option>
+                    </select>
+                  </div>
+
+                  {provisionError && (
+                    <div style={{ background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', padding: 10, borderRadius: 8, color: '#fb7185', fontSize: '0.8rem', marginBottom: 14 }}>
+                      ❌ {provisionError}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => setProvisionModalOpen(false)}
+                      style={{ padding: '8px 16px', borderRadius: 8, background: 'rgba(30, 41, 59, 0.8)', color: '#cbd5e1', border: '1px solid rgba(148, 163, 184, 0.2)', cursor: 'pointer', fontSize: '0.82rem' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={provisionLoading}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '8px 18px',
+                        borderRadius: 8,
+                        background: '#06b6d4',
+                        color: '#090d16',
+                        fontWeight: 700,
+                        border: 'none',
+                        cursor: provisionLoading ? 'not-allowed' : 'pointer',
+                        fontSize: '0.82rem',
+                      }}
+                    >
+                      {provisionLoading ? (
+                        <>
+                          <Icons.refresh size={14} className="live-pulse" />
+                          Generating Quantum Keys...
+                        </>
+                      ) : (
+                        <>
+                          <Icons.key size={14} />
+                          Generate Quantum Keys & Register
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: 12, borderRadius: 8, marginBottom: 16 }}>
+                    <Icons.check size={22} style={{ color: '#34d399' }} />
+                    <div>
+                      <div style={{ color: '#34d399', fontWeight: 800, fontSize: '0.95rem' }}>
+                        Device Provisioned & Authorized Successfully!
+                      </div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: 2 }}>
+                        Registered in SQLite registry and bound to hash-chained tamper-evident audit log.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+                    <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: 10, borderRadius: 8 }}>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase' }}>Device ID</div>
+                      <div className="font-mono" style={{ fontWeight: 700, color: '#38bdf8', marginTop: 2 }}>{provisionResult.device_id}</div>
+                    </div>
+                    <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: 10, borderRadius: 8 }}>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase' }}>Assigned Role</div>
+                      <div style={{ fontWeight: 600, color: '#f8fafc', marginTop: 2 }}>{provisionResult.role}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(15, 23, 42, 0.8)', padding: 12, borderRadius: 8, border: '1px solid rgba(148, 163, 184, 0.1)', marginBottom: 10, fontSize: '0.78rem' }}>
+                    <div style={{ color: '#94a3b8', marginBottom: 2 }}>One-Time Enrolment Code:</div>
+                    <div className="font-mono" style={{ color: '#fbbf24', wordBreak: 'break-all' }}>{provisionResult.enrolment_code}</div>
+                  </div>
+
+                  <div style={{ background: 'rgba(15, 23, 42, 0.8)', padding: 12, borderRadius: 8, border: '1px solid rgba(148, 163, 184, 0.1)', marginBottom: 10, fontSize: '0.78rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', marginBottom: 2 }}>
+                      <span>ML-KEM-768 Public Key:</span>
+                      <span className="font-mono" style={{ color: '#34d399' }}>{provisionResult.kem_pk_len} bytes</span>
+                    </div>
+                    <div className="font-mono" style={{ color: '#38bdf8', wordBreak: 'break-all', fontSize: '0.72rem' }}>{provisionResult.kem_pk_preview}</div>
+                  </div>
+
+                  <div style={{ background: 'rgba(15, 23, 42, 0.8)', padding: 12, borderRadius: 8, border: '1px solid rgba(148, 163, 184, 0.1)', marginBottom: 16, fontSize: '0.78rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', marginBottom: 2 }}>
+                      <span>ML-DSA-65 Verification Key:</span>
+                      <span className="font-mono" style={{ color: '#34d399' }}>{provisionResult.sig_pk_len} bytes</span>
+                    </div>
+                    <div className="font-mono" style={{ color: '#38bdf8', wordBreak: 'break-all', fontSize: '0.72rem' }}>{provisionResult.sig_pk_preview}</div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                    <button
+                      onClick={() => {
+                        setProvisionResult(null);
+                        setProvisionModalOpen(false);
+                      }}
+                      style={{ padding: '8px 18px', borderRadius: 8, background: '#06b6d4', color: '#090d16', fontWeight: 700, border: 'none', cursor: 'pointer', fontSize: '0.82rem' }}
+                    >
+                      Close & View in Registry
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── MODAL: System Specs ────────────────────────────────────────────── */}
       {envModalOpen && (
