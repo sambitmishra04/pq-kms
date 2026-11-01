@@ -471,7 +471,7 @@ def main() -> None:
             with cq1:
                 st.error("#### Classical Baseline (X25519 / RSA)")
                 st.markdown(f"**Quantum Security:** `{q_info['classical_quantum_security']}`")
-                st.markdown(f"**Shor's Algorithm:** Breaks in polynomial time $\\mathcal{O}((\\log N)^3)$")
+                st.markdown(r"**Shor's Algorithm:** Breaks in polynomial time $\mathcal{O}((\log N)^3)$")
                 st.markdown(f"**Verdict:** All harvested clinical records are decrypted once quantum computer exists.")
 
             with cq2:

@@ -49,8 +49,14 @@ case "$cmd" in
   dashboard)
     activate
     cd "$PROJ"
-    echo "[Dashboard] Starting Streamlit dashboard..."
+    echo "[Dashboard] Starting Streamlit Medical SOC & Biochip Simulator Dashboard..."
     streamlit run dashboard/app.py --server.port 8501
+    ;;
+  dashboard-old)
+    activate
+    cd "$PROJ"
+    echo "[Dashboard] Starting Classic Streamlit Dashboard..."
+    streamlit run dashboard/old_app.py --server.port 8501
     ;;
   data)
     activate
@@ -84,17 +90,18 @@ case "$cmd" in
     echo "      View presentation:    bash run.sh slides"
     ;;
   *)
-    echo "Usage: bash run.sh [setup|server|test|bench|dashboard|data|demo|slides|report|all]"
+    echo "Usage: bash run.sh [setup|server|test|bench|dashboard|dashboard-old|data|demo|slides|report|all]"
     echo ""
-    echo "  setup      — create venv, install dependencies, download data"
-    echo "  server     — start the FastAPI PQ-KMS server"
-    echo "  test       — run full pytest security + functional test suite (23 tests)"
-    echo "  bench      — run all benchmark experiments, generate tables & figures"
-    echo "  dashboard  — start the Streamlit Medical SOC & Biochip simulator dashboard"
-    echo "  data       — download/generate biomedical vitals data"
-    echo "  demo       — run one-click automated live evaluator demonstration"
-    echo "  slides     — display location of interactive presentation slide deck"
-    echo "  report     — generate publication-ready LaTeX Chapter 8"
-    echo "  all        — run tests + benchmarks + report"
+    echo "  setup         — create venv, install dependencies, download data"
+    echo "  server        — start the FastAPI PQ-KMS server"
+    echo "  test          — run full pytest security + functional test suite (23 tests)"
+    echo "  bench         — run all benchmark experiments, generate tables & figures"
+    echo "  dashboard     — start the Streamlit Medical SOC & Biochip simulator dashboard"
+    echo "  dashboard-old — start the original/classic Streamlit monitoring dashboard"
+    echo "  data          — download/generate biomedical vitals data"
+    echo "  demo          — run one-click automated live evaluator demonstration"
+    echo "  slides        — display location of interactive presentation slide deck"
+    echo "  report        — generate publication-ready LaTeX Chapter 8"
+    echo "  all           — run tests + benchmarks + report"
     ;;
 esac
