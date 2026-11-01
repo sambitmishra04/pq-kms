@@ -17,8 +17,14 @@ bash run.sh test
 # 3. Run all benchmark experiments and generate figures/tables
 bash run.sh bench
 
-# 4. Start the live monitoring dashboard
-bash run.sh dashboard   # → http://localhost:8501
+# 4a. Start the Medical SOC & Biochip Simulator Dashboard (Streamlit)
+bash run.sh dashboard                # → http://localhost:8501
+
+# 4b. Start the Modern Interactive React Dashboard
+bash run.sh dashboard-old            # → http://localhost:8502 (or bash run.sh dashboard-react)
+
+# 4c. Start the Classic Streamlit Dashboard (before-change version)
+bash run.sh dashboard-old-streamlit  # → http://localhost:8501
 
 # 5. Start the API server (in a separate terminal)
 bash run.sh server      # → http://localhost:8000
@@ -56,7 +62,10 @@ kms/
 │       ├── client.py                # Simulated biochip client (full protocol)
 │       └── workloads.py             # Real + synthetic biomedical payloads
 ├── dashboard/
-│   └── app.py                       # Streamlit monitoring dashboard
+│   ├── app.py                       # Newer Streamlit SOC & biochip simulator dashboard
+│   ├── old_app.py                   # Classic/original Streamlit monitoring dashboard (before-change)
+│   ├── server.py                    # Modern React dashboard server
+│   └── react_ui/                    # Modern clean interactive React UI (source & pre-built dist)
 ├── tests/
 │   ├── conftest.py                  # Fixtures (in-process server, device helpers)
 │   ├── test_functional.py           # FT-01 to FT-05

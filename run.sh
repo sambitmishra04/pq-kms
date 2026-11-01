@@ -52,10 +52,16 @@ case "$cmd" in
     echo "[Dashboard] Starting Streamlit Medical SOC & Biochip Simulator Dashboard..."
     streamlit run dashboard/app.py --server.port 8501
     ;;
-  dashboard-old)
+  dashboard-old|dashboard-react)
     activate
     cd "$PROJ"
-    echo "[Dashboard] Starting Classic Streamlit Dashboard..."
+    echo "[Dashboard] Starting Modern Clean Interactive React UI Dashboard..."
+    python -m dashboard.server --port "${REACT_DASHBOARD_PORT:-8502}"
+    ;;
+  dashboard-old-streamlit|dashboard-classic-streamlit)
+    activate
+    cd "$PROJ"
+    echo "[Dashboard] Starting Original/Classic Streamlit Dashboard (Before-Change Version)..."
     streamlit run dashboard/old_app.py --server.port 8501
     ;;
   data)
@@ -90,14 +96,15 @@ case "$cmd" in
     echo "      View presentation:    bash run.sh slides"
     ;;
   *)
-    echo "Usage: bash run.sh [setup|server|test|bench|dashboard|dashboard-old|data|demo|slides|report|all]"
+    echo "Usage: bash run.sh [setup|server|test|bench|dashboard|dashboard-old|dashboard-old-streamlit|data|demo|slides|report|all]"
     echo ""
-    echo "  setup         — create venv, install dependencies, download data"
-    echo "  server        — start the FastAPI PQ-KMS server"
-    echo "  test          — run full pytest security + functional test suite (23 tests)"
-    echo "  bench         — run all benchmark experiments, generate tables & figures"
-    echo "  dashboard     — start the Streamlit Medical SOC & Biochip simulator dashboard"
-    echo "  dashboard-old — start the original/classic Streamlit monitoring dashboard"
+    echo "  setup                   — create venv, install dependencies, download data"
+    echo "  server                  — start the FastAPI PQ-KMS server"
+    echo "  test                    — run full pytest security + functional test suite (23 tests)"
+    echo "  bench                   — run all benchmark experiments, generate tables & figures"
+    echo "  dashboard               — start the Streamlit Medical SOC & Biochip simulator dashboard"
+    echo "  dashboard-old           — start the modern clean interactive React UI dashboard (replaced old UI)"
+    echo "  dashboard-old-streamlit — start the original/classic Streamlit dashboard (before-change version)"
     echo "  data          — download/generate biomedical vitals data"
     echo "  demo          — run one-click automated live evaluator demonstration"
     echo "  slides        — display location of interactive presentation slide deck"

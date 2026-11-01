@@ -11,6 +11,8 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 dist/
+!dashboard/react_ui/dist/
+node_modules/
 build/
 .coverage
 htmlcov/
