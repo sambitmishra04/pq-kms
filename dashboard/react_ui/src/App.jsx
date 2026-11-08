@@ -18,6 +18,12 @@ const Icons = {
   x: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>,
   plus: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
   zoom: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/></svg>,
+  activity: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+  target: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  play: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><polygon points="5 3 19 12 5 21 5 3"/></svg>,
+  fastForward: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><polygon points="13 19 22 12 13 5 13 19"/><polygon points="2 19 11 12 2 5 2 19"/></svg>,
+  rotateCcw: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>,
+  droplet: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>,
 };
 
 // ─── Chart Component Wrapper ──────────────────────────────────────────────────
@@ -83,16 +89,16 @@ function Badge({ status, label }) {
   let cls = 'badge-info';
   let dotColor = '#94a3b8';
 
-  if (['AUTHORIZED', 'ACTIVE', 'ACCEPTED', 'VALID', 'PASS'].includes(s)) {
+  if (['AUTHORIZED', 'ACTIVE', 'ACCEPTED', 'VALID', 'PASS', 'NORMAL'].includes(s)) {
     cls = 'badge-authorized';
     dotColor = '#10b981';
-  } else if (['REVOKED', 'REJECTED', 'COMPROMISED', 'FAIL', 'BROKEN'].includes(s)) {
+  } else if (['REVOKED', 'REJECTED', 'COMPROMISED', 'FAIL', 'BROKEN', 'DIABETIC', 'CRITICAL_HIGH'].includes(s)) {
     cls = 'badge-revoked';
     dotColor = '#f43f5e';
-  } else if (['PENDING', 'DEACTIVATED', 'WARNING'].includes(s)) {
+  } else if (['PENDING', 'DEACTIVATED', 'WARNING', 'PRE_DIABETIC'].includes(s)) {
     cls = 'badge-pending';
     dotColor = '#f59e0b';
-  } else if (['DISABLED', 'DESTROYED', 'INFO'].includes(s)) {
+  } else if (['DISABLED', 'DESTROYED', 'INFO', 'HYPOGLYCEMIA'].includes(s)) {
     cls = 'badge-disabled';
     dotColor = '#64748b';
   }
@@ -137,7 +143,7 @@ function exportToCsv(filename, rows) {
 
 // ─── Main Application ─────────────────────────────────────────────────────────
 export default function App() {
-  const [activeTab, setActiveTab] = useState('devices');
+  const [activeTab, setActiveTab] = useState('patients');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefreshSecs, setAutoRefreshSecs] = useState(0); // 0 = off
@@ -151,6 +157,33 @@ export default function App() {
   const [auditData, setAuditData] = useState({ chain_valid: true, chain_break_index: null, outcome_counts: {}, events: [] });
   const [benchmarksData, setBenchmarksData] = useState({ e1_primitive_benchmarks: [], figures: [], table20_markdown: '', table20_comparison: [] });
   const [securityData, setSecurityData] = useState({ security_test_cases: [], test_summary: [], crl: null, message_stats: {} });
+
+  // Phase 1: Patient Clinical Data States
+  const [patientsData, setPatientsData] = useState({ total: 0, page: 1, page_size: 15, total_pages: 1, patients: [] });
+  const [patientStats, setPatientStats] = useState({ total_patients: 0, diabetic_count: 0, non_diabetic_count: 0, diabetic_percent: 0, mean_glucose: 0, mean_bmi: 0, mean_age: 0, mean_blood_pressure: 0, glucose_distribution: {}, risk_counts: {} });
+  const [patientSearch, setPatientSearch] = useState('');
+  const [patientOutcomeFilter, setPatientOutcomeFilter] = useState('ALL');
+  const [patientRiskFilter, setPatientRiskFilter] = useState('ALL');
+  const [patientPage, setPatientPage] = useState(1);
+  const [patientLoading, setPatientLoading] = useState(false);
+
+  // Phase 1: Cryptographic Inspector Specification State
+  const [cryptoSpec, setCryptoSpec] = useState({});
+
+  // Phase 2: Biochip Digital Twin Simulation States
+  const [simulatorState, setSimulatorState] = useState({ snapshot: null, total_steps: 7, current_step_idx: 0, patient_glucose: 220, steps: [], sensor_readout: null });
+  const [simulatorGlucoseInput, setSimulatorGlucoseInput] = useState(220.0);
+  const [simulatorLoading, setSimulatorLoading] = useState(false);
+
+  // Phase 2: Cyber-Physical Attack Lab States
+  const [attackChoice, setAttackChoice] = useState('tamper'); // 'tamper' | 'replay' | 'quantum'
+  const [tamperTrueGlucose, setTamperTrueGlucose] = useState(220.0);
+  const [tamperFalseGlucose, setTamperFalseGlucose] = useState(110.0);
+  const [tamperResult, setTamperResult] = useState(null);
+  const [tamperLoading, setTamperLoading] = useState(false);
+  const [replayResult, setReplayResult] = useState(null);
+  const [replayLoading, setReplayLoading] = useState(false);
+  const [quantumResult, setQuantumResult] = useState(null);
 
   // Filter & Search states
   const [deviceSearch, setDeviceSearch] = useState('');
@@ -180,17 +213,54 @@ export default function App() {
   const [auditPage, setAuditPage] = useState(1);
   const pageSize = 15;
 
+  // ─── Fetch Patient Data (Dedicated) ──────────────────────────────────────────
+  const fetchPatients = async (page = patientPage, search = patientSearch, outcome = patientOutcomeFilter, risk = patientRiskFilter) => {
+    setPatientLoading(true);
+    try {
+      const q = new URLSearchParams({
+        page: String(page),
+        page_size: String(pageSize),
+        search: search.trim(),
+        outcome: outcome,
+        risk: risk,
+      });
+      const res = await fetch(`/api/patients?${q.toString()}`).then(r => r.json());
+      setPatientsData(res);
+    } catch (err) {
+      console.error('Failed to fetch patient data:', err);
+    } finally {
+      setPatientLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatients(patientPage, patientSearch, patientOutcomeFilter, patientRiskFilter);
+  }, [patientPage, patientOutcomeFilter, patientRiskFilter]);
+
+  // Debounced search for patient filter
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      fetchPatients(1, patientSearch, patientOutcomeFilter, patientRiskFilter);
+      setPatientPage(1);
+    }, 250);
+    return () => clearTimeout(handler);
+  }, [patientSearch]);
+
   // ─── Fetch All Data ──────────────────────────────────────────────────────────
   const fetchAllData = async (isManual = false) => {
     if (isManual) setRefreshing(true);
     try {
-      const [rInfo, rDev, rSess, rAudit, rBench, rSec] = await Promise.all([
+      const [rInfo, rDev, rSess, rAudit, rBench, rSec, rPStats, rSpec, rSim, rQuantum] = await Promise.all([
         fetch('/api/info').then(r => r.json()).catch(() => ({})),
         fetch('/api/devices').then(r => r.json()).catch(() => ({ total: 0, status_counts: {}, devices: [] })),
         fetch('/api/sessions').then(r => r.json()).catch(() => ({ total: 0, state_counts: {}, sessions: [] })),
         fetch('/api/audit?limit=500').then(r => r.json()).catch(() => ({ chain_valid: true, chain_break_index: null, outcome_counts: {}, events: [] })),
         fetch('/api/benchmarks').then(r => r.json()).catch(() => ({ e1_primitive_benchmarks: [], figures: [] })),
         fetch('/api/security').then(r => r.json()).catch(() => ({ security_test_cases: [], test_summary: [], crl: null, message_stats: {} })),
+        fetch('/api/patients/stats').then(r => r.json()).catch(() => ({ total_patients: 0, glucose_distribution: {}, risk_counts: {} })),
+        fetch('/api/crypto/spec').then(r => r.json()).catch(() => ({})),
+        fetch('/api/simulator/state').then(r => r.json()).catch(() => ({ total_steps: 7, current_step_idx: 0 })),
+        fetch('/api/attacks/quantum-threat').then(r => r.json()).catch(() => null),
       ]);
 
       setInfo(rInfo);
@@ -199,6 +269,13 @@ export default function App() {
       setAuditData(rAudit);
       setBenchmarksData(rBench);
       setSecurityData(rSec);
+      setPatientStats(rPStats);
+      setCryptoSpec(rSpec);
+      setSimulatorState(rSim);
+      if (rSim && rSim.patient_glucose !== undefined) {
+        setSimulatorGlucoseInput(rSim.patient_glucose);
+      }
+      setQuantumResult(rQuantum);
       setBackendOnline(true);
       setLastUpdated(new Date());
     } catch (err) {
@@ -213,6 +290,84 @@ export default function App() {
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  // ─── Biochip Simulator Handlers ─────────────────────────────────────────────
+  const handleSimulatorReset = async () => {
+    setSimulatorLoading(true);
+    try {
+      const res = await fetch('/api/simulator/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient_glucose: Number(simulatorGlucoseInput) }),
+      }).then(r => r.json());
+      setSimulatorState(res);
+      fetchAllData(false);
+    } catch (err) {
+      console.error('Failed to reset biochip:', err);
+    } finally {
+      setSimulatorLoading(false);
+    }
+  };
+
+  const handleSimulatorStep = async () => {
+    setSimulatorLoading(true);
+    try {
+      const res = await fetch('/api/simulator/step', { method: 'POST' }).then(r => r.json());
+      setSimulatorState(res);
+      fetchAllData(false);
+    } catch (err) {
+      console.error('Failed to step biochip:', err);
+    } finally {
+      setSimulatorLoading(false);
+    }
+  };
+
+  const handleSimulatorRunAll = async () => {
+    setSimulatorLoading(true);
+    try {
+      const res = await fetch('/api/simulator/run-all', { method: 'POST' }).then(r => r.json());
+      setSimulatorState(res);
+      fetchAllData(false);
+    } catch (err) {
+      console.error('Failed to run all biochip steps:', err);
+    } finally {
+      setSimulatorLoading(false);
+    }
+  };
+
+  // ─── Attack Lab Handlers ────────────────────────────────────────────────────
+  const handleRunTamperAttack = async () => {
+    setTamperLoading(true);
+    try {
+      const res = await fetch('/api/attacks/tamper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          true_glucose: Number(tamperTrueGlucose),
+          falsified_glucose: Number(tamperFalseGlucose),
+        }),
+      }).then(r => r.json());
+      setTamperResult(res);
+      fetchAllData(false);
+    } catch (err) {
+      console.error('Failed to run tamper attack:', err);
+    } finally {
+      setTamperLoading(false);
+    }
+  };
+
+  const handleRunReplayAttack = async () => {
+    setReplayLoading(true);
+    try {
+      const res = await fetch('/api/attacks/replay', { method: 'POST' }).then(r => r.json());
+      setReplayResult(res);
+      fetchAllData(false);
+    } catch (err) {
+      console.error('Failed to run replay attack:', err);
+    } finally {
+      setReplayLoading(false);
+    }
+  };
 
   // Auto-refresh interval
   useEffect(() => {
@@ -366,6 +521,35 @@ export default function App() {
     };
   }, [benchmarksData.e1_primitive_benchmarks]);
 
+  const patientGlucoseChartData = useMemo(() => {
+    const gd = patientStats.glucose_distribution || {};
+    return {
+      labels: ['<100 (Optimal)', '100-139 (Normal)', '140-199 (Impaired)', '≥200 (Diabetic)'],
+      datasets: [
+        {
+          label: 'Patient Count',
+          data: [gd.under_100 || 0, gd['100_to_139'] || 0, gd['140_to_199'] || 0, gd['200_plus'] || 0],
+          backgroundColor: ['#10b981', '#06b6d4', '#f59e0b', '#f43f5e'],
+          borderRadius: 6,
+        },
+      ],
+    };
+  }, [patientStats.glucose_distribution]);
+
+  const patientOutcomeChartData = useMemo(() => {
+    return {
+      labels: ['Healthy Non-Diabetic', 'Diagnosed Diabetic'],
+      datasets: [
+        {
+          data: [patientStats.non_diabetic_count || 0, patientStats.diabetic_count || 0],
+          backgroundColor: ['#10b981', '#f43f5e'],
+          borderColor: '#0f172a',
+          borderWidth: 2,
+        },
+      ],
+    };
+  }, [patientStats.non_diabetic_count, patientStats.diabetic_count]);
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* ─── Top Modern Header Bar ─────────────────────────────────────────── */}
@@ -481,6 +665,10 @@ export default function App() {
         {/* ─── Navigation Tabs ──────────────────────────────────────────────── */}
         <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 24px', display: 'flex', gap: 6, overflowX: 'auto' }}>
           {[
+            { id: 'patients', label: '🩺 Patient Vitals (Doctors)', icon: Icons.activity, count: patientStats.total_patients || 768 },
+            { id: 'crypto', label: '🔬 Crypto Inspector', icon: Icons.lock },
+            { id: 'biochip', label: '🧬 Biochip Digital Twin', icon: Icons.droplet },
+            { id: 'attacks', label: '🎯 Attack Sandbox', icon: Icons.target },
             { id: 'devices', label: 'Registered Devices', icon: Icons.device, count: devicesData.total },
             { id: 'sessions', label: 'Session Keys', icon: Icons.key, count: sessionsData.total },
             { id: 'audit', label: 'Tamper-Evident Audit', icon: Icons.fileText, count: auditData.events ? auditData.events.length : 0 },
@@ -533,6 +721,1065 @@ export default function App() {
 
       {/* ─── Main Content Container ────────────────────────────────────────── */}
       <main style={{ maxWidth: 1440, margin: '0 auto', padding: '24px', flex: 1, width: '100%' }}>
+        {/* ─── TAB: CLINICAL PATIENT VITALS (DOCTORS PORTAL) ──────────────── */}
+        {activeTab === 'patients' && (
+          <div>
+            {/* Header info */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#f8fafc' }}>
+                    🩺 Clinical Diagnostic Telemetry & Patient Vitals
+                  </h2>
+                  <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 600 }}>
+                    Clinician View
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.84rem', color: '#94a3b8', marginTop: 4 }}>
+                  Real patient cohort (Pima Indians Diabetes Dataset, 768 assays) protected by PQ-KMS ML-KEM-768 & AES-256-GCM AEAD encryption.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  onClick={() => exportToCsv('clinical_patient_vitals', patientsData.patients || [])}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    color: '#cbd5e1',
+                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Icons.download size={14} />
+                  Export Visible Records ({patientsData.patients ? patientsData.patients.length : 0})
+                </button>
+              </div>
+            </div>
+
+            {/* KPI Metric Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
+              <div className="glass-card" style={{ padding: 20, borderLeft: '4px solid #06b6d4' }}>
+                <div style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Total Cohort Assays
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#38bdf8', marginTop: 4 }}>
+                  {patientStats.total_patients || 768} Patients
+                </div>
+                <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 4 }}>
+                  Protected by Post-Quantum Sessions
+                </div>
+              </div>
+
+              <div className="glass-card" style={{ padding: 20, borderLeft: '4px solid #f43f5e' }}>
+                <div style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Diabetic Positive
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#fb7185', marginTop: 4 }}>
+                  {patientStats.diabetic_count || 268} ({patientStats.diabetic_percent || '34.9'}%)
+                </div>
+                <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 4 }}>
+                  Clinical Outcome = 1
+                </div>
+              </div>
+
+              <div className="glass-card" style={{ padding: 20, borderLeft: '4px solid #10b981' }}>
+                <div style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Cohort Mean Glucose
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#34d399', marginTop: 4 }}>
+                  {patientStats.mean_glucose || '120.9'} <span style={{ fontSize: '1rem', fontWeight: 500 }}>mg/dL</span>
+                </div>
+                <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 4 }}>
+                  Normal Reference: 70 - 139 mg/dL
+                </div>
+              </div>
+
+              <div className="glass-card" style={{ padding: 20, borderLeft: '4px solid #f59e0b' }}>
+                <div style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Cohort Mean BMI
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#fbbf24', marginTop: 4 }}>
+                  {patientStats.mean_bmi || '32.0'} <span style={{ fontSize: '1rem', fontWeight: 500 }}>kg/m²</span>
+                </div>
+                <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 4 }}>
+                  Mean Age: {patientStats.mean_age || '33.2'} yrs • BP: {patientStats.mean_blood_pressure || '69.1'} mmHg
+                </div>
+              </div>
+            </div>
+
+            {/* Charts Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20, marginBottom: 24 }}>
+              <div className="glass-card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc', marginBottom: 16 }}>
+                  Blood Glucose Concentration Distribution (mg/dL)
+                </h3>
+                <ChartCanvas
+                  type="bar"
+                  data={patientGlucoseChartData}
+                  options={{
+                    plugins: { legend: { display: false } },
+                  }}
+                  height={220}
+                />
+              </div>
+
+              <div className="glass-card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc', marginBottom: 16 }}>
+                  Diagnostic Outcome Ratio (Cohort Prevalence)
+                </h3>
+                <ChartCanvas
+                  type="doughnut"
+                  data={patientOutcomeChartData}
+                  options={{
+                    plugins: { legend: { position: 'right' } },
+                  }}
+                  height={220}
+                />
+              </div>
+            </div>
+
+            {/* Clinical Security Context Banner */}
+            <div
+              className="glass-card"
+              style={{
+                padding: '16px 20px',
+                marginBottom: 20,
+                borderLeft: '4px solid #38bdf8',
+                background: 'rgba(56, 189, 248, 0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+              }}
+            >
+              <div style={{ padding: 10, background: 'rgba(56, 189, 248, 0.15)', borderRadius: 10, color: '#38bdf8' }}>
+                <Icons.shield size={22} />
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.6 }}>
+                <strong style={{ color: '#38bdf8' }}>End-to-End Microfluidic Telemetry Protection:</strong> In a clinical deployment, these patient assay readings originate from edge EWOD biochips and are authenticated and encrypted using <strong>AES-256-GCM</strong> with keys established via <strong>NIST FIPS 203 ML-KEM-768</strong>. This mathematically prevents in-transit payload falsification (Ali et al.) and shields diagnostic histories from harvest-now-decrypt-later quantum interception.
+              </div>
+            </div>
+
+            {/* Search & Filter Toolbar */}
+            <div className="glass-card" style={{ padding: '16px 20px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 280 }}>
+                <div style={{ position: 'relative', width: '100%', maxWidth: 360 }}>
+                  <Icons.search size={16} style={{ position: 'absolute', left: 12, top: 10, color: '#64748b' }} />
+                  <input
+                    type="text"
+                    placeholder="Search Patient ID (e.g. PAT-0042) or Age..."
+                    value={patientSearch}
+                    onChange={e => setPatientSearch(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(30, 41, 59, 0.7)',
+                      border: '1px solid rgba(148, 163, 184, 0.2)',
+                      borderRadius: 8,
+                      padding: '8px 12px 8px 36px',
+                      color: '#f8fafc',
+                      fontSize: '0.85rem',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                {/* Outcome Filter Buttons */}
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {[
+                    { id: 'ALL', label: 'All Outcomes' },
+                    { id: '0', label: 'Healthy (0)' },
+                    { id: '1', label: 'Diabetic (1)' },
+                  ].map(btn => (
+                    <button
+                      key={btn.id}
+                      onClick={() => { setPatientOutcomeFilter(btn.id); setPatientPage(1); }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 6,
+                        border: '1px solid',
+                        borderColor: patientOutcomeFilter === btn.id ? '#06b6d4' : 'rgba(148, 163, 184, 0.2)',
+                        background: patientOutcomeFilter === btn.id ? 'rgba(6, 182, 212, 0.15)' : 'rgba(30, 41, 59, 0.5)',
+                        color: patientOutcomeFilter === btn.id ? '#38bdf8' : '#94a3b8',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {btn.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Risk Filter Buttons */}
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {[
+                    { id: 'ALL', label: 'All Status' },
+                    { id: 'NORMAL', label: 'Normal' },
+                    { id: 'PRE_DIABETIC', label: 'Pre-Diabetic' },
+                    { id: 'DIABETIC', label: 'Diabetic' },
+                  ].map(btn => (
+                    <button
+                      key={btn.id}
+                      onClick={() => { setPatientRiskFilter(btn.id); setPatientPage(1); }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 6,
+                        border: '1px solid',
+                        borderColor: patientRiskFilter === btn.id ? '#10b981' : 'rgba(148, 163, 184, 0.2)',
+                        background: patientRiskFilter === btn.id ? 'rgba(16, 185, 129, 0.15)' : 'rgba(30, 41, 59, 0.5)',
+                        color: patientRiskFilter === btn.id ? '#34d399' : '#94a3b8',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {btn.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                Total Filtered: <strong style={{ color: '#f8fafc' }}>{patientsData.total || 0}</strong> patients
+              </div>
+            </div>
+
+            {/* Patients Table */}
+            <div className="glass-card" style={{ overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto', maxHeight: 540 }}>
+                <table className="custom-table">
+                  <thead>
+                    <tr>
+                      <th>Patient ID</th>
+                      <th>Age</th>
+                      <th>Glucose (mg/dL)</th>
+                      <th>Blood Pressure</th>
+                      <th>Insulin</th>
+                      <th>BMI</th>
+                      <th>Clinical Status</th>
+                      <th>Diagnostic Outcome</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(patientsData.patients || []).map(p => (
+                      <tr key={p.id}>
+                        <td>
+                          <span className="font-mono" style={{ fontWeight: 700, color: '#38bdf8' }}>
+                            {p.id}
+                          </span>
+                        </td>
+                        <td className="font-mono" style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                          {p.age} yrs
+                        </td>
+                        <td>
+                          <span className="font-mono" style={{ fontSize: '0.9rem', fontWeight: 700, color: p.glucose >= 200 ? '#fb7185' : p.glucose >= 140 ? '#fbbf24' : '#34d399' }}>
+                            {p.glucose}
+                          </span>
+                        </td>
+                        <td className="font-mono" style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                          {p.blood_pressure} mmHg
+                        </td>
+                        <td className="font-mono" style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                          {p.insulin > 0 ? `${p.insulin} µU/mL` : '—'}
+                        </td>
+                        <td className="font-mono" style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                          {p.bmi}
+                        </td>
+                        <td>
+                          <Badge status={p.clinical_status} label={p.clinical_status.replace('_', '-')} />
+                        </td>
+                        <td>
+                          {p.outcome === 1 ? (
+                            <span style={{ color: '#fb7185', fontWeight: 700, fontSize: '0.8rem' }}>
+                              ● DIABETIC (Positive)
+                            </span>
+                          ) : (
+                            <span style={{ color: '#34d399', fontWeight: 600, fontSize: '0.8rem' }}>
+                              ○ Negative (Normal)
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {!patientsData.patients?.length && (
+                      <tr>
+                        <td colSpan={8} style={{ textAlign: 'center', padding: 32, color: '#64748b' }}>
+                          {patientLoading ? 'Loading patient records...' : 'No patient vitals match the selected filters.'}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Table Pagination */}
+              {patientsData.total > pageSize && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid rgba(148, 163, 184, 0.1)', background: 'rgba(15, 23, 42, 0.6)' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                    Showing {(patientPage - 1) * pageSize + 1} to {Math.min(patientPage * pageSize, patientsData.total)} of {patientsData.total}
+                  </span>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      disabled={patientPage <= 1}
+                      onClick={() => setPatientPage(p => p - 1)}
+                      style={{ padding: '4px 10px', borderRadius: 6, background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(148, 163, 184, 0.2)', color: '#f8fafc', fontSize: '0.75rem', cursor: patientPage <= 1 ? 'not-allowed' : 'pointer' }}
+                    >
+                      Prev
+                    </button>
+                    <span style={{ padding: '4px 10px', fontSize: '0.78rem', color: '#cbd5e1' }}>
+                      Page {patientPage} of {patientsData.total_pages || Math.ceil(patientsData.total / pageSize)}
+                    </span>
+                    <button
+                      disabled={patientPage >= (patientsData.total_pages || Math.ceil(patientsData.total / pageSize))}
+                      onClick={() => setPatientPage(p => p + 1)}
+                      style={{ padding: '4px 10px', borderRadius: 6, background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(148, 163, 184, 0.2)', color: '#f8fafc', fontSize: '0.75rem', cursor: patientPage >= (patientsData.total_pages || Math.ceil(patientsData.total / pageSize)) ? 'not-allowed' : 'pointer' }}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: CRYPTOGRAPHIC INSPECTOR ─────────────────────────────────── */}
+        {activeTab === 'crypto' && (
+          <div>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#f8fafc' }}>
+                  🔬 Deep Cryptographic Inspector ("Under the Hood")
+                </h2>
+                <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 9999, background: 'rgba(6, 182, 212, 0.15)', color: '#38bdf8', border: '1px solid rgba(6, 182, 212, 0.3)', fontWeight: 600 }}>
+                  FIPS 203 / 204 Standards
+                </span>
+              </div>
+              <p style={{ fontSize: '0.84rem', color: '#94a3b8', marginTop: 4 }}>
+                Technical specifications of post-quantum lattice primitives, key derivation paths, deterministic nonce construction, and NIST SP 800-57 state machine.
+              </p>
+            </div>
+
+            {/* Standard Primitives Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 24 }}>
+              {/* ML-KEM-768 */}
+              <div className="glass-card" style={{ padding: 20, borderLeft: '4px solid #38bdf8' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc' }}>
+                    NIST FIPS 203: ML-KEM-768
+                  </h3>
+                  <Badge status="PASS" label="Category 3 PQC" />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: '0.8rem', marginBottom: 12 }}>
+                  <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: 10, borderRadius: 8 }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>Public Encap Key</div>
+                    <div className="font-mono" style={{ color: '#38bdf8', fontWeight: 700, marginTop: 2 }}>1,184 Bytes</div>
+                  </div>
+                  <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: 10, borderRadius: 8 }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>Decap Secret Key</div>
+                    <div className="font-mono" style={{ color: '#cbd5e1', fontWeight: 700, marginTop: 2 }}>2,400 Bytes</div>
+                  </div>
+                  <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: 10, borderRadius: 8 }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>Ciphertext Size</div>
+                    <div className="font-mono" style={{ color: '#34d399', fontWeight: 700, marginTop: 2 }}>1,088 Bytes</div>
+                  </div>
+                  <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: 10, borderRadius: 8 }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>Shared Secret (SS)</div>
+                    <div className="font-mono" style={{ color: '#fbbf24', fontWeight: 700, marginTop: 2 }}>32 Bytes (256-bit)</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                  <strong>Hardness:</strong> Module Learning with Errors (M-LWE) over polynomial ring Z_q[X]/(X^256+1) with q=3329, k=3.
+                </div>
+              </div>
+
+              {/* ML-DSA-65 */}
+              <div className="glass-card" style={{ padding: 20, borderLeft: '4px solid #34d399' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc' }}>
+                    NIST FIPS 204: ML-DSA-65
+                  </h3>
+                  <Badge status="PASS" label="Category 3 PQC" />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: '0.8rem', marginBottom: 12 }}>
+                  <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: 10, borderRadius: 8 }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>Verification Key (PK)</div>
+                    <div className="font-mono" style={{ color: '#34d399', fontWeight: 700, marginTop: 2 }}>1,952 Bytes</div>
+                  </div>
+                  <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: 10, borderRadius: 8 }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>Signing Secret Key</div>
+                    <div className="font-mono" style={{ color: '#cbd5e1', fontWeight: 700, marginTop: 2 }}>4,032 Bytes</div>
+                  </div>
+                  <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: 10, borderRadius: 8 }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>Signature Length</div>
+                    <div className="font-mono" style={{ color: '#38bdf8', fontWeight: 700, marginTop: 2 }}>3,309 Bytes</div>
+                  </div>
+                  <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: 10, borderRadius: 8 }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>Signing Mode</div>
+                    <div className="font-mono" style={{ color: '#c084fc', fontWeight: 700, marginTop: 2 }}>Hedged RBG</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                  <strong>Hardness:</strong> Module Learning with Rounding & Fiat-Shamir with Aborts. Dimensions (k=6, l=5) over ring degree n=256.
+                </div>
+              </div>
+            </div>
+
+            {/* Derivation & AEAD Deep Dive */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: 20, marginBottom: 24 }}>
+              <div className="glass-card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc', marginBottom: 12 }}>
+                  RFC 5869: HKDF-SHA256 Session Key Derivation
+                </h3>
+                <pre style={{ background: 'rgba(15, 23, 42, 0.8)', padding: 14, borderRadius: 8, fontSize: '0.78rem', color: '#cbd5e1', overflowX: 'auto', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+{`PRK = HMAC-SHA256(
+    salt = nonce_c (16-byte cryptographically secure client nonce),
+    IKM  = ML-KEM-768 Shared Secret (32 bytes)
+)
+
+K_session = HKDF-Expand(
+    PRK  = PRK,
+    info = "PQKMS-v1" || device_id || session_id || "aes256gcm",
+    L    = 32 bytes (256-bit symmetric AEAD session key)
+)`}
+                </pre>
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 10 }}>
+                  🔒 <strong>Independent Re-derivation:</strong> Client and Server independently derive K_session without transmitting secret key material over the network.
+                </div>
+              </div>
+
+              <div className="glass-card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc', marginBottom: 12 }}>
+                  NIST SP 800-38D: 96-Bit Deterministic Nonce Construction
+                </h3>
+                <pre style={{ background: 'rgba(15, 23, 42, 0.8)', padding: 14, borderRadius: 8, fontSize: '0.78rem', color: '#cbd5e1', overflowX: 'auto', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+{`96-bit Nonce Architecture:
+┌──────────────────────────────┬────────────────────────────────────────┐
+│ Bytes 0..3: Role ID (32-bit) │ Bytes 4..11: Monotonic Counter (64-bit)│
+│ 0x00000001 = Client          │ Counter starts at 1, strictly increases│
+│ 0x00000002 = Server          │ Per-direction collision-free guarantees│
+└──────────────────────────────┴────────────────────────────────────────┘
+
+Authenticated Associated Data (AAD) Binding:
+AAD = device_id || session_id || message_id || counter`}
+                </pre>
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 10 }}>
+                  🛡️ <strong>Anti-Replay Assurance:</strong> Replayed or reordered packets fail counter validation (c &le; c_last) or cause AES-GCM tag verification exception (InvalidTag).
+                </div>
+              </div>
+            </div>
+
+            {/* Protocol Stepper Workflow */}
+            <div className="glass-card" style={{ padding: 20, marginBottom: 24 }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc', marginBottom: 16 }}>
+                PQ-KMS End-to-End Cryptographic Protocol Flow
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                {[
+                  { step: '01', title: 'Admin Enrolment', desc: 'Admin issues out-of-band one-time enrolment code C_enrol for biochip hardware ID.' },
+                  { step: '02', title: 'Proof-of-Possession', desc: 'Device signs (device_id || kem_pk || sig_pk) under domain prefix PQKMS-REG.' },
+                  { step: '03', title: 'ML-KEM Agreement', desc: 'Device signs session request with PQKMS-SREQ. Server encapsulates shared secret and signs response with PQKMS-SRESP.' },
+                  { step: '04', title: 'HKDF Key Expansion', desc: 'Both nodes derive 256-bit symmetric session key with client nonce salt.' },
+                  { step: '05', title: 'Zero-Retention Memory', desc: 'Session keys stored solely in volatile RAM. Zero disk persistence.' },
+                  { step: '06', title: 'Protected Telemetry', desc: 'Microfluidic droplet sensor telemetry encrypted under AES-256-GCM.' },
+                ].map(st => (
+                  <div key={st.step} style={{ background: 'rgba(30, 41, 59, 0.5)', padding: 14, borderRadius: 8, border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#06b6d4' }}>PHASE {st.step}</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc', margin: '4px 0' }}>{st.title}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>{st.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Domain Separation Matrix */}
+            <div className="glass-card" style={{ padding: 20 }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc', marginBottom: 12 }}>
+                Cryptographic Domain Separation Matrix (Table 13 / ST-14 Mitigation)
+              </h3>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="custom-table" style={{ fontSize: '0.8rem' }}>
+                  <thead>
+                    <tr>
+                      <th>Context String</th>
+                      <th>Protocol Operation</th>
+                      <th>Purpose & Threat Vector Mitigated</th>
+                      <th>Security Invariant</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><span className="font-mono" style={{ color: '#38bdf8', fontWeight: 700 }}>PQKMS-REG</span></td>
+                      <td>Device Enrolment & Registration</td>
+                      <td>Binds public keys to hardware device ID during initial Alg 1 proof-of-possession.</td>
+                      <td><Badge status="PASS" label="Cross-Context Isolated" /></td>
+                    </tr>
+                    <tr>
+                      <td><span className="font-mono" style={{ color: '#34d399', fontWeight: 700 }}>PQKMS-SREQ</span></td>
+                      <td>Session Key Request Handshake</td>
+                      <td>Authenticates client session request timestamp and client nonce nonce_c.</td>
+                      <td><Badge status="PASS" label="Anti-Replay Bound" /></td>
+                    </tr>
+                    <tr>
+                      <td><span className="font-mono" style={{ color: '#c084fc', fontWeight: 700 }}>PQKMS-SRESP</span></td>
+                      <td>Session Key Response Transmission</td>
+                      <td>Server signs KEM ciphertext and assigned expiration timestamp.</td>
+                      <td><Badge status="PASS" label="Server Authenticated" /></td>
+                    </tr>
+                    <tr>
+                      <td><span className="font-mono" style={{ color: '#fb7185', fontWeight: 700 }}>PQKMS-REV</span></td>
+                      <td>Device Revocation List (CRL)</td>
+                      <td>Signs device revocation list (Algorithm 5) preventing CRL rollback.</td>
+                      <td><Badge status="PASS" label="Signed Anti-Rollback" /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: BIOCHIP DIGITAL TWIN (DMFB 8x8 SIMULATOR) ──────────────── */}
+        {activeTab === 'biochip' && (
+          <div>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#f8fafc' }}>
+                  🧬 Cyber-Physical Biochip Digital Twin (DMFB 8×8 EWOD)
+                </h2>
+                <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 9999, background: 'rgba(6, 182, 212, 0.15)', color: '#38bdf8', border: '1px solid rgba(6, 182, 212, 0.3)', fontWeight: 600 }}>
+                  Electrowetting Simulator
+                </span>
+              </div>
+              <p style={{ fontSize: '0.84rem', color: '#94a3b8', marginTop: 4 }}>
+                Simulating automated <strong>enzymatic glucose assay</strong> execution on an 8×8 array of electrowetting-on-dielectric (EWOD) electrodes. Droplet transport, mixing, and photodiode detection coordinate with edge PQ-KMS controllers.
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 24, marginBottom: 24 }}>
+              {/* Controls Column */}
+              <div className="glass-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc' }}>
+                  Assay Protocol Controls
+                </h3>
+
+                {/* Patient Glucose Slider */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      Patient Blood Glucose Level:
+                    </label>
+                    <span className="font-mono" style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.9rem' }}>
+                      {simulatorGlucoseInput} mg/dL
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="40"
+                    max="450"
+                    step="5"
+                    value={simulatorGlucoseInput}
+                    onChange={e => setSimulatorGlucoseInput(Number(e.target.value))}
+                    style={{ width: '100%', accentColor: '#06b6d4', cursor: 'pointer' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b', marginTop: 2 }}>
+                    <span>40 mg/dL (Hypo)</span>
+                    <span>100 mg/dL (Normal)</span>
+                    <span>220 mg/dL (Hyper)</span>
+                    <span>450 mg/dL (Critical)</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <button
+                    onClick={handleSimulatorReset}
+                    disabled={simulatorLoading}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      padding: '10px 16px',
+                      borderRadius: 8,
+                      background: 'rgba(30, 41, 59, 0.8)',
+                      border: '1px solid rgba(148, 163, 184, 0.25)',
+                      color: '#f8fafc',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: '0.82rem',
+                    }}
+                  >
+                    <Icons.rotateCcw size={15} />
+                    Reset Biochip & Reload Protocol ({simulatorGlucoseInput} mg/dL)
+                  </button>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <button
+                      onClick={handleSimulatorStep}
+                      disabled={simulatorLoading || (simulatorState.current_step_idx >= (simulatorState.total_steps || 7))}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        padding: '10px 16px',
+                        borderRadius: 8,
+                        background: '#06b6d4',
+                        border: 'none',
+                        color: '#090d16',
+                        fontWeight: 700,
+                        cursor: (simulatorState.current_step_idx >= (simulatorState.total_steps || 7)) ? 'not-allowed' : 'pointer',
+                        fontSize: '0.82rem',
+                        opacity: (simulatorState.current_step_idx >= (simulatorState.total_steps || 7)) ? 0.5 : 1,
+                      }}
+                    >
+                      <Icons.play size={14} />
+                      Next Step ▶
+                    </button>
+
+                    <button
+                      onClick={handleSimulatorRunAll}
+                      disabled={simulatorLoading || (simulatorState.current_step_idx >= (simulatorState.total_steps || 7))}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        padding: '10px 16px',
+                        borderRadius: 8,
+                        background: 'rgba(16, 185, 129, 0.2)',
+                        border: '1px solid rgba(16, 185, 129, 0.4)',
+                        color: '#34d399',
+                        fontWeight: 700,
+                        cursor: (simulatorState.current_step_idx >= (simulatorState.total_steps || 7)) ? 'not-allowed' : 'pointer',
+                        fontSize: '0.82rem',
+                        opacity: (simulatorState.current_step_idx >= (simulatorState.total_steps || 7)) ? 0.5 : 1,
+                      }}
+                    >
+                      <Icons.fastForward size={14} />
+                      Run Complete Assay ⏩
+                    </button>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#94a3b8', marginBottom: 4 }}>
+                    <span>Assay Step Progress</span>
+                    <span className="font-mono" style={{ color: '#38bdf8', fontWeight: 600 }}>
+                      Step {simulatorState.current_step_idx || 0} of {simulatorState.total_steps || 7}
+                    </span>
+                  </div>
+                  <div style={{ width: '100%', height: 6, background: 'rgba(30, 41, 59, 0.8)', borderRadius: 9999, overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${((simulatorState.current_step_idx || 0) / (simulatorState.total_steps || 7)) * 100}%`,
+                        height: '100%',
+                        background: 'linear-gradient(90deg, #06b6d4, #10b981)',
+                        transition: 'width 0.3s ease',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Step Description Card */}
+                {simulatorState.steps && simulatorState.current_step_idx > 0 && simulatorState.current_step_idx <= simulatorState.steps.length && (
+                  <div style={{ background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.25)', padding: 12, borderRadius: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8' }}>
+                        STEP {simulatorState.steps[simulatorState.current_step_idx - 1].step_num}: {simulatorState.steps[simulatorState.current_step_idx - 1].operation}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#e2e8f0', lineHeight: 1.5 }}>
+                      {simulatorState.steps[simulatorState.current_step_idx - 1].description}
+                    </div>
+                  </div>
+                )}
+
+                {/* Optical Biosensor Readout */}
+                {simulatorState.sensor_readout && simulatorState.sensor_readout.detected && (
+                  <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: 14, borderRadius: 8 }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#34d399', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      🔬 Photodiode Optical Sensor Readout
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                      <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: 8, borderRadius: 6 }}>
+                        <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Optical Absorbance</div>
+                        <div className="font-mono" style={{ color: '#38bdf8', fontWeight: 700 }}>
+                          {simulatorState.sensor_readout.absorbance_au} AU
+                        </div>
+                      </div>
+                      <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: 8, borderRadius: 6 }}>
+                        <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Measured Glucose</div>
+                        <div className="font-mono" style={{ color: '#34d399', fontWeight: 700 }}>
+                          {simulatorState.sensor_readout.glucose_mg_dl} mg/dL
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>
+                      Diagnostic Assessment: <Badge status={simulatorState.sensor_readout.glucose_mg_dl >= 200 ? 'DIABETIC' : 'NORMAL'} label={simulatorState.sensor_readout.clinical_status} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Biochip 8x8 Grid Display */}
+              <div className="glass-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc' }}>
+                    DMFB 2D Electrode Grid Array (8 × 8 EWOD Cells)
+                  </h3>
+                  <span style={{ fontSize: '0.72rem', color: '#06b6d4', fontWeight: 600 }}>
+                    Active Electrodes: {(simulatorState.snapshot?.active_electrodes || []).length}
+                  </span>
+                </div>
+
+                {/* 8x8 Grid */}
+                <div className="biochip-grid-container">
+                  {Array.from({ length: 8 }).map((_, y) => (
+                    Array.from({ length: 8 }).map((_, x) => {
+                      const isActive = (simulatorState.snapshot?.active_electrodes || []).some(
+                        e => (Array.isArray(e) ? (e[0] === x && e[1] === y) : (e.x === x && e.y === y))
+                      );
+                      const isDetector = x === 3 && y === 6;
+                      const isSample = x === 0 && y === 2;
+                      const isReagent = x === 7 && y === 2;
+                      const isWaste = x === 7 && y === 7;
+
+                      const droplet = (simulatorState.snapshot?.droplets || []).find(d => d.x === x && d.y === y);
+
+                      let cellClass = 'biochip-cell';
+                      if (isActive) cellClass += ' active-electrode';
+                      else if (isDetector) cellClass += ' detector-electrode';
+                      else if (isSample) cellClass += ' sample-electrode';
+                      else if (isReagent) cellClass += ' reagent-electrode';
+                      else if (isWaste) cellClass += ' waste-electrode';
+
+                      return (
+                        <div key={`${x}-${y}`} className={cellClass} title={`Electrode (${x}, ${y})`}>
+                          <span style={{ color: 'rgba(148, 163, 184, 0.3)', fontSize: '0.55rem', position: 'absolute', top: 2, left: 3 }}>
+                            {x},{y}
+                          </span>
+
+                          {isDetector && !droplet && (
+                            <span style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 800 }}>DET</span>
+                          )}
+                          {isSample && !droplet && (
+                            <span style={{ fontSize: '0.65rem', color: '#f43f5e', fontWeight: 800 }}>SMP</span>
+                          )}
+                          {isReagent && !droplet && (
+                            <span style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: 800 }}>REA</span>
+                          )}
+                          {isWaste && !droplet && (
+                            <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 800 }}>WST</span>
+                          )}
+
+                          {droplet && (
+                            <div
+                              className="droplet-circle"
+                              style={{ backgroundColor: droplet.color || '#3b82f6' }}
+                              title={`Droplet: ${droplet.label} (${droplet.volume_ul} µL, ${droplet.concentration_mg_dl} mg/dL)`}
+                            >
+                              {droplet.label.substring(0, 1)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ))}
+                </div>
+
+                {/* Grid Legend */}
+                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center', marginTop: 18, fontSize: '0.72rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 12, height: 12, background: 'rgba(6, 182, 212, 0.45)', border: '1px solid #06b6d4', borderRadius: 3 }} />
+                    <span>Active Electrode</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 12, height: 12, background: 'rgba(244, 63, 94, 0.3)', border: '1px solid #f43f5e', borderRadius: 3 }} />
+                    <span>Sample (0,2)</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 12, height: 12, background: 'rgba(56, 189, 248, 0.3)', border: '1px solid #38bdf8', borderRadius: 3 }} />
+                    <span>Reagent (7,2)</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 12, height: 12, background: 'rgba(16, 185, 129, 0.3)', border: '1px solid #10b981', borderRadius: 3 }} />
+                    <span>Detector (3,6)</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 12, height: 12, background: 'rgba(100, 116, 139, 0.3)', border: '1px solid #64748b', borderRadius: 3 }} />
+                    <span>Waste (7,7)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: CYBER-PHYSICAL ATTACK SANDBOX ──────────────────────────── */}
+        {activeTab === 'attacks' && (
+          <div>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#f8fafc' }}>
+                  🎯 Cyber-Physical Attack Sandbox & Adversarial Verification
+                </h2>
+                <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 9999, background: 'rgba(244, 63, 94, 0.15)', color: '#fb7185', border: '1px solid rgba(244, 63, 94, 0.3)', fontWeight: 600 }}>
+                  Threat Mitigation Lab
+                </span>
+              </div>
+              <p style={{ fontSize: '0.84rem', color: '#94a3b8', marginTop: 4 }}>
+                Simulate published cyber-physical attack vectors from DMFB security literature (Ali et al., Guo et al.) and verify PQ-KMS's post-quantum defenses.
+              </p>
+            </div>
+
+            {/* Attack Choice Selector */}
+            <div className="glass-card" style={{ padding: 12, marginBottom: 20, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[
+                { id: 'tamper', label: '1. Glucose Assay Result Tampering (Ali et al. [1])' },
+                { id: 'replay', label: '2. Diagnostic Message Replay Attack' },
+                { id: 'quantum', label: '3. Harvest-Now, Decrypt-Later Quantum Threat' },
+              ].map(atk => (
+                <button
+                  key={atk.id}
+                  onClick={() => setAttackChoice(atk.id)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: '1px solid',
+                    borderColor: attackChoice === atk.id ? '#f43f5e' : 'rgba(148, 163, 184, 0.2)',
+                    background: attackChoice === atk.id ? 'rgba(244, 63, 94, 0.15)' : 'rgba(30, 41, 59, 0.5)',
+                    color: attackChoice === atk.id ? '#fb7185' : '#94a3b8',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {atk.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Scenario 1: Tamper */}
+            {attackChoice === 'tamper' && (
+              <div>
+                <div className="glass-card" style={{ padding: 20, marginBottom: 20 }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc', marginBottom: 6 }}>
+                    🧪 Attack Scenario: In-Transit Assay Falsification (Ali et al.)
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.6, marginBottom: 16 }}>
+                    Ali et al. demonstrated that an adversary eavesdropping on biomedical communications can flip ciphertext bits to manipulate blood glucose readings, falsely altering a critical <strong>220 mg/dL hyperglycemic result to 110 mg/dL</strong> so insulin is withheld from the patient.
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 16 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 600, marginBottom: 6 }}>
+                        True Physical Glucose (mg/dL):
+                      </label>
+                      <input
+                        type="number"
+                        value={tamperTrueGlucose}
+                        onChange={e => setTamperTrueGlucose(Number(e.target.value))}
+                        style={{
+                          width: '100%',
+                          background: 'rgba(30, 41, 59, 0.7)',
+                          border: '1px solid rgba(148, 163, 184, 0.25)',
+                          borderRadius: 8,
+                          padding: '8px 12px',
+                          color: '#f8fafc',
+                          fontFamily: 'JetBrains Mono',
+                          fontSize: '0.85rem',
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 600, marginBottom: 6 }}>
+                        Adversary Injected Falsified Glucose (mg/dL):
+                      </label>
+                      <input
+                        type="number"
+                        value={tamperFalseGlucose}
+                        onChange={e => setTamperFalseGlucose(Number(e.target.value))}
+                        style={{
+                          width: '100%',
+                          background: 'rgba(30, 41, 59, 0.7)',
+                          border: '1px solid rgba(148, 163, 184, 0.25)',
+                          borderRadius: 8,
+                          padding: '8px 12px',
+                          color: '#f8fafc',
+                          fontFamily: 'JetBrains Mono',
+                          fontSize: '0.85rem',
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleRunTamperAttack}
+                    disabled={tamperLoading}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '10px 20px',
+                      borderRadius: 8,
+                      background: '#f43f5e',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      boxShadow: '0 4px 14px rgba(244, 63, 94, 0.3)',
+                    }}
+                  >
+                    <Icons.target size={16} />
+                    {tamperLoading ? 'Executing Bit-Flip Attack...' : '🚨 Launch In-Transit Tamper Attack'}
+                  </button>
+                </div>
+
+                {/* Attack Results Comparison */}
+                {tamperResult && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20 }}>
+                    {/* Unprotected Legacy DMFB */}
+                    <div className="glass-card" style={{ padding: 20, borderLeft: '4px solid #f43f5e', background: 'rgba(244, 63, 94, 0.06)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fb7185' }}>
+                          ❌ Legacy Unprotected DMFB (Vulnerable)
+                        </h4>
+                        <Badge status="COMPROMISED" label="Vulnerable" />
+                      </div>
+                      <div style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.6, marginBottom: 10 }}>
+                        <div>Received at Hospital: <strong className="font-mono" style={{ color: '#fbbf24' }}>{tamperResult.unprotected_system.received_glucose} mg/dL</strong></div>
+                        <div>Adversary Detection: <strong style={{ color: '#fb7185' }}>None (Passed CRC or unauthenticated cipher)</strong></div>
+                      </div>
+                      <div style={{ background: 'rgba(244, 63, 94, 0.15)', padding: 12, borderRadius: 8, color: '#fb7185', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                        <strong>Clinical Harm:</strong> {tamperResult.unprotected_system.clinical_consequence}
+                      </div>
+                    </div>
+
+                    {/* PQ-KMS Protected DMFB */}
+                    <div className="glass-card" style={{ padding: 20, borderLeft: '4px solid #10b981', background: 'rgba(16, 185, 129, 0.06)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#34d399' }}>
+                          🛡️ PQ-KMS Protected DMFB (Secure)
+                        </h4>
+                        <Badge status="PASS" label="Tamper Caught" />
+                      </div>
+                      <div style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.6, marginBottom: 10 }}>
+                        <div>Tamper Caught: <strong style={{ color: '#34d399' }}>YES (Zero Bit-Flips Tolerated)</strong></div>
+                        <div>Cryptographic Error: <strong className="font-mono" style={{ color: '#38bdf8' }}>{tamperResult.pqkms_system.error_detail}</strong></div>
+                      </div>
+                      <div style={{ background: 'rgba(16, 185, 129, 0.15)', padding: 12, borderRadius: 8, color: '#34d399', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                        <strong>Clinical Outcome:</strong> {tamperResult.pqkms_system.clinical_consequence}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Scenario 2: Replay */}
+            {attackChoice === 'replay' && (
+              <div className="glass-card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc', marginBottom: 6 }}>
+                  🔁 Attack Scenario: Diagnostic Telemetry Frame Replay
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.6, marginBottom: 16 }}>
+                  An adversary intercepts a legitimate, healthy diagnostic reading captured yesterday (counter = 1) and replays it today (counter = 25) when the patient is in a critical condition to mask diagnostic alarms.
+                </p>
+
+                <button
+                  onClick={handleRunReplayAttack}
+                  disabled={replayLoading}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '10px 20px',
+                    borderRadius: 8,
+                    background: '#f43f5e',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    marginBottom: 20,
+                  }}
+                >
+                  <Icons.refresh size={16} />
+                  {replayLoading ? 'Testing Replay Rejection...' : '🚨 Launch Diagnostic Frame Replay Attack'}
+                </button>
+
+                {replayResult && (
+                  <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: 16, borderRadius: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <Icons.check size={22} style={{ color: '#34d399' }} />
+                      <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#34d399' }}>
+                        PQ-KMS Anti-Replay Defense Activated Successfully!
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.6 }}>
+                      <div>Rejection Mechanism: <strong className="font-mono" style={{ color: '#fb7185' }}>{replayResult.rejection_reason}</strong></div>
+                      <div>Mitigation Invariant: <strong style={{ color: '#38bdf8' }}>{replayResult.mitigation}</strong></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Scenario 3: Quantum */}
+            {attackChoice === 'quantum' && (
+              <div className="glass-card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc', marginBottom: 6 }}>
+                  ⚛️ "Harvest-Now, Decrypt-Later" Quantum Threat Matrix
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.6, marginBottom: 16 }}>
+                  Adversaries record encrypted biomedical transmissions today. Once a fault-tolerant quantum computer exists, classical Diffie-Hellman and elliptic curves will be broken in polynomial time via Shor's algorithm.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20 }}>
+                  <div style={{ background: 'rgba(244, 63, 94, 0.08)', border: '1px solid rgba(244, 63, 94, 0.25)', padding: 18, borderRadius: 10 }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fb7185', marginBottom: 10 }}>
+                      Classical Baseline (X25519 ECDH / RSA)
+                    </h4>
+                    <div style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.6 }}>
+                      <div>Quantum Security: <strong style={{ color: '#fb7185' }}>0 bits (Broken)</strong></div>
+                      <div>Shor's Algorithm: <span className="font-mono" style={{ color: '#fbbf24' }}>O((log N)^3) polynomial time</span></div>
+                      <div style={{ marginTop: 8, color: '#94a3b8' }}>
+                        Verdict: All harvested historical patient assays decrypted once quantum computer operates.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: 18, borderRadius: 10 }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#34d399', marginBottom: 10 }}>
+                      PQ-KMS (NIST FIPS 203 ML-KEM-768)
+                    </h4>
+                    <div style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.6 }}>
+                      <div>Quantum Security: <strong style={{ color: '#34d399' }}>Category 3 (192-bit quantum strength)</strong></div>
+                      <div>Hardness: <span className="font-mono" style={{ color: '#38bdf8' }}>Module Learning With Errors (M-LWE)</span></div>
+                      <div style={{ marginTop: 8, color: '#94a3b8' }}>
+                        Verdict: Patient records encrypted today remain undecryptable indefinitely.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ─── TAB 1: DEVICES ──────────────────────────────────────────────── */}
         {activeTab === 'devices' && (
           <div>

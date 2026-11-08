@@ -12,8 +12,9 @@ import csv
 import json
 import os
 import sys
+from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import Any, List, Optional
 
 # Ensure liboqs is found
 _oqs_lib = Path.home() / "_oqs" / "lib"
@@ -22,13 +23,17 @@ if _oqs_lib.exists():
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.config import (
+    CTX_REG,
+    CTX_REV,
+    CTX_SREQ,
+    CTX_SRESP,
     DATABASE_PATH,
     KEM_ALG,
     MAX_MESSAGES,
@@ -38,11 +43,14 @@ from app.config import (
     TS_SKEW_S,
 )
 from app.database.db import Database
+from app.simulation.attack_lab import AttackLab
+from app.simulation.dmfb_simulator import DMFBBiochip, get_biochip
 
 ROOT_DIR = Path(__file__).parent.parent
 TABLES_DIR = ROOT_DIR / "results" / "tables"
 FIGURES_DIR = ROOT_DIR / "results" / "figures"
 ENV_PATH = ROOT_DIR / "results" / "environment.json"
+VITALS_PATH = ROOT_DIR / "data" / "vitals.csv"
 DIST_DIR = Path(__file__).parent / "react_ui" / "dist"
 
 app = FastAPI(
@@ -302,6 +310,376 @@ def get_security():
         "crl": crl_formatted,
         "message_stats": msg_stats,
     }
+
+
+# ─── Clinical Patient Data Helpers & Endpoints ───────────────────────────────
+
+_cached_patients: Optional[list[dict[str, Any]]] = None
+_simulator_steps: list[Any] = []
+_simulator_current_step_idx: int = 0
+_simulator_patient_glucose: float = 220.0
+
+
+def _load_patients() -> list[dict[str, Any]]:
+    global _cached_patients
+    if _cached_patients is not None:
+        return _cached_patients
+
+    if not VITALS_PATH.exists():
+        return []
+
+    results = []
+    with open(VITALS_PATH, mode="r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for idx, row in enumerate(reader):
+            try:
+                glucose = float(row.get("Glucose", 0))
+                bp = float(row.get("BloodPressure", 0))
+                skin = float(row.get("SkinThickness", 0))
+                insulin = float(row.get("Insulin", 0))
+                bmi = float(row.get("BMI", 0))
+                pedigree = float(row.get("DiabetesPedigreeFunction", 0))
+                age = int(row.get("Age", 0))
+                outcome = int(row.get("Outcome", 0))
+                pregnancies = int(row.get("Pregnancies", 0))
+            except (ValueError, TypeError):
+                continue
+
+            if glucose >= 200.0:
+                clinical_status = "DIABETIC"
+                risk_label = "Hyperglycemia (High Risk)"
+            elif glucose >= 140.0:
+                clinical_status = "PRE_DIABETIC"
+                risk_label = "Impaired Tolerance"
+            elif glucose >= 70.0:
+                clinical_status = "NORMAL"
+                risk_label = "Euglycemic (Normal)"
+            else:
+                clinical_status = "HYPOGLYCEMIA"
+                risk_label = "Hypoglycemic Alert"
+
+            results.append({
+                "id": f"PAT-{idx + 1:04d}",
+                "patient_index": idx + 1,
+                "pregnancies": pregnancies,
+                "glucose": glucose,
+                "blood_pressure": bp,
+                "skin_thickness": skin,
+                "insulin": insulin,
+                "bmi": bmi,
+                "pedigree": pedigree,
+                "age": age,
+                "outcome": outcome,
+                "clinical_status": clinical_status,
+                "risk_label": risk_label,
+            })
+
+    _cached_patients = results
+    return _cached_patients
+
+
+@app.get("/api/patients")
+def get_patients(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(15, ge=1, le=100),
+    search: str = Query(""),
+    outcome: str = Query("ALL"),
+    risk: str = Query("ALL"),
+):
+    """Serve paginated clinical patient vitals for medical clinicians."""
+    all_patients = _load_patients()
+    filtered = all_patients
+
+    if search:
+        s = search.strip().lower()
+        filtered = [
+            p for p in filtered
+            if s in p["id"].lower()
+            or s in str(p["age"])
+            or s in str(p["glucose"])
+            or s in p["clinical_status"].lower()
+        ]
+
+    if outcome in ("0", "1"):
+        outcome_int = int(outcome)
+        filtered = [p for p in filtered if p["outcome"] == outcome_int]
+
+    if risk != "ALL":
+        filtered = [p for p in filtered if p["clinical_status"] == risk]
+
+    total = len(filtered)
+    start_idx = (page - 1) * page_size
+    end_idx = start_idx + page_size
+    paged = filtered[start_idx:end_idx]
+
+    return {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": (total + page_size - 1) // page_size if page_size > 0 else 1,
+        "patients": paged,
+    }
+
+
+@app.get("/api/patients/stats")
+def get_patient_stats():
+    """Aggregated clinical cohort telemetry and diagnostic distributions."""
+    patients = _load_patients()
+    if not patients:
+        return {
+            "total_patients": 0,
+            "diabetic_count": 0,
+            "non_diabetic_count": 0,
+            "diabetic_percent": 0.0,
+            "mean_glucose": 0.0,
+            "mean_bmi": 0.0,
+            "mean_age": 0.0,
+            "mean_blood_pressure": 0.0,
+            "glucose_distribution": {},
+            "age_distribution": {},
+            "risk_counts": {},
+        }
+
+    total = len(patients)
+    diabetic = sum(1 for p in patients if p["outcome"] == 1)
+    non_diabetic = total - diabetic
+
+    mean_glucose = sum(p["glucose"] for p in patients) / total
+    mean_bmi = sum(p["bmi"] for p in patients) / total
+    mean_age = sum(p["age"] for p in patients) / total
+    mean_bp = sum(p["blood_pressure"] for p in patients) / total
+
+    under_100 = sum(1 for p in patients if p["glucose"] < 100)
+    g_100_139 = sum(1 for p in patients if 100 <= p["glucose"] < 140)
+    g_140_199 = sum(1 for p in patients if 140 <= p["glucose"] < 200)
+    g_200_plus = sum(1 for p in patients if p["glucose"] >= 200)
+
+    risk_counts = {
+        "NORMAL": sum(1 for p in patients if p["clinical_status"] == "NORMAL"),
+        "PRE_DIABETIC": sum(1 for p in patients if p["clinical_status"] == "PRE_DIABETIC"),
+        "DIABETIC": sum(1 for p in patients if p["clinical_status"] == "DIABETIC"),
+        "HYPOGLYCEMIA": sum(1 for p in patients if p["clinical_status"] == "HYPOGLYCEMIA"),
+    }
+
+    age_under_30 = sum(1 for p in patients if p["age"] < 30)
+    age_30_49 = sum(1 for p in patients if 30 <= p["age"] < 50)
+    age_50_plus = sum(1 for p in patients if p["age"] >= 50)
+
+    return {
+        "total_patients": total,
+        "diabetic_count": diabetic,
+        "non_diabetic_count": non_diabetic,
+        "diabetic_percent": round((diabetic / total) * 100, 1) if total > 0 else 0.0,
+        "mean_glucose": round(mean_glucose, 1),
+        "mean_bmi": round(mean_bmi, 1),
+        "mean_age": round(mean_age, 1),
+        "mean_blood_pressure": round(mean_bp, 1),
+        "glucose_distribution": {
+            "under_100": under_100,
+            "100_to_139": g_100_139,
+            "140_to_199": g_140_199,
+            "200_plus": g_200_plus,
+        },
+        "age_distribution": {
+            "under_30": age_under_30,
+            "30_to_49": age_30_49,
+            "50_plus": age_50_plus,
+        },
+        "risk_counts": risk_counts,
+    }
+
+
+# ─── Cryptographic Inspector Specification API ───────────────────────────────
+
+@app.get("/api/crypto/spec")
+def get_crypto_spec():
+    """Complete under-the-hood cryptographic parameter specifications."""
+    return {
+        "kem": {
+            "name": "ML-KEM-768",
+            "standard": "NIST FIPS 203 (Formerly CRYSTALS-Kyber)",
+            "security_category": "Category 3 (192-bit quantum security, equivalent to AES-192)",
+            "lattice_family": "Module Learning with Errors (M-LWE)",
+            "lattice_rank": 3,
+            "public_key_bytes": 1184,
+            "private_key_bytes": 2400,
+            "ciphertext_bytes": 1088,
+            "shared_secret_bytes": 32,
+            "purpose": "Post-Quantum Ephemeral Session Key Encapsulation (Algorithm 2)",
+        },
+        "sig": {
+            "name": "ML-DSA-65",
+            "standard": "NIST FIPS 204 (Formerly CRYSTALS-Dilithium)",
+            "security_category": "Category 3 (192-bit quantum security)",
+            "lattice_family": "Module Learning with Rounding / Fiat-Shamir with Aborts",
+            "matrix_dimensions": "(k=6, l=5)",
+            "public_key_bytes": 1952,
+            "secret_key_bytes": 4032,
+            "signature_bytes": 3309,
+            "signing_mode": "Hedged (private key + message + fresh approved RBG randomness)",
+            "purpose": "Mutual Proof-of-Possession & Server Authentication Signatures",
+        },
+        "kdf": {
+            "name": "HKDF-SHA256",
+            "standard": "RFC 5869",
+            "ikm": "ML-KEM Shared Secret (32 bytes)",
+            "salt": "Client Nonce nonce_c (16 cryptographically secure random bytes)",
+            "info_pattern": '"PQKMS-v1" || device_id || session_id || "aes256gcm"',
+            "derived_length": "32 bytes (256-bit symmetric session key)",
+        },
+        "aead": {
+            "name": "AES-256-GCM",
+            "standard": "NIST SP 800-38D",
+            "key_size_bits": 256,
+            "tag_size_bits": 128,
+            "nonce_size_bits": 96,
+            "nonce_construction": "role32 (0x00000001 Client / 0x00000002 Server) || counter64 (Monotonic)",
+            "aad_binding": "device_id || session_id || message_id || counter",
+            "replay_protection": "Strictly monotonic invocation counter checked against in-memory session record",
+        },
+        "domain_separation": {
+            "registration_proof": CTX_REG.decode("utf-8", errors="ignore") if isinstance(CTX_REG, bytes) else str(CTX_REG),
+            "session_request": CTX_SREQ.decode("utf-8", errors="ignore") if isinstance(CTX_SREQ, bytes) else str(CTX_SREQ),
+            "session_response": CTX_SRESP.decode("utf-8", errors="ignore") if isinstance(CTX_SRESP, bytes) else str(CTX_SRESP),
+            "revocation_crl": CTX_REV.decode("utf-8", errors="ignore") if isinstance(CTX_REV, bytes) else str(CTX_REV),
+        },
+        "key_lifecycle": {
+            "standard": "NIST SP 800-57 Part 1 Rev 5",
+            "states": ["CREATED", "ACTIVE", "DEACTIVATED", "DESTROYED", "COMPROMISED"],
+            "storage_policy": "Zero plaintext key persistence in storage; keys exist solely in-memory",
+            "zeroization": "Volatile memory zeroized immediately upon state transition to DESTROYED",
+            "default_cryptoperiod_s": SESSION_LIFETIME_S,
+            "max_messages_per_key": MAX_MESSAGES,
+        },
+    }
+
+
+# ─── Biochip Digital Twin Simulator APIs ─────────────────────────────────────
+
+class SimulatorResetRequest(BaseModel):
+    patient_glucose: float = 220.0
+
+
+@app.get("/api/simulator/state")
+def get_simulator_state():
+    """Current state of the 8x8 DMFB electrowetting biochip."""
+    global _simulator_steps, _simulator_current_step_idx, _simulator_patient_glucose
+    chip = get_biochip()
+    if not _simulator_steps:
+        _simulator_steps = chip.load_glucose_assay(patient_glucose=_simulator_patient_glucose)
+        _simulator_current_step_idx = 0
+
+    return {
+        "snapshot": chip.get_state_snapshot(),
+        "total_steps": len(_simulator_steps),
+        "current_step_idx": _simulator_current_step_idx,
+        "patient_glucose": _simulator_patient_glucose,
+        "steps": [asdict(s) for s in _simulator_steps],
+        "sensor_readout": chip.read_optical_sensor(),
+    }
+
+
+@app.post("/api/simulator/reset")
+def reset_simulator(req: SimulatorResetRequest):
+    """Reset the 8x8 DMFB biochip and load enzymatic glucose assay protocol."""
+    global _simulator_steps, _simulator_current_step_idx, _simulator_patient_glucose
+    chip = get_biochip()
+    _simulator_patient_glucose = float(req.patient_glucose)
+    _simulator_steps = chip.load_glucose_assay(patient_glucose=_simulator_patient_glucose)
+    _simulator_current_step_idx = 0
+
+    return {
+        "status": "RESET_SUCCESS",
+        "snapshot": chip.get_state_snapshot(),
+        "total_steps": len(_simulator_steps),
+        "current_step_idx": _simulator_current_step_idx,
+        "patient_glucose": _simulator_patient_glucose,
+        "steps": [asdict(s) for s in _simulator_steps],
+        "sensor_readout": chip.read_optical_sensor(),
+    }
+
+
+@app.post("/api/simulator/step")
+def step_simulator():
+    """Execute the next physical electrowetting actuation step."""
+    global _simulator_steps, _simulator_current_step_idx
+    chip = get_biochip()
+    if not _simulator_steps:
+        _simulator_steps = chip.load_glucose_assay(patient_glucose=_simulator_patient_glucose)
+        _simulator_current_step_idx = 0
+
+    executed_step = None
+    if _simulator_current_step_idx < len(_simulator_steps):
+        step_to_run = _simulator_steps[_simulator_current_step_idx]
+        chip.execute_step(step_to_run)
+        executed_step = asdict(step_to_run)
+        _simulator_current_step_idx += 1
+
+    return {
+        "status": "STEP_EXECUTED" if executed_step else "ASSAY_COMPLETE",
+        "snapshot": chip.get_state_snapshot(),
+        "current_step_idx": _simulator_current_step_idx,
+        "total_steps": len(_simulator_steps),
+        "executed_step": executed_step,
+        "sensor_readout": chip.read_optical_sensor(),
+    }
+
+
+@app.post("/api/simulator/run-all")
+def run_all_simulator():
+    """Fast-forward through all remaining actuation steps to optical detection."""
+    global _simulator_steps, _simulator_current_step_idx
+    chip = get_biochip()
+    if not _simulator_steps:
+        _simulator_steps = chip.load_glucose_assay(patient_glucose=_simulator_patient_glucose)
+        _simulator_current_step_idx = 0
+
+    while _simulator_current_step_idx < len(_simulator_steps):
+        step_to_run = _simulator_steps[_simulator_current_step_idx]
+        chip.execute_step(step_to_run)
+        _simulator_current_step_idx += 1
+
+    return {
+        "status": "ASSAY_COMPLETE",
+        "snapshot": chip.get_state_snapshot(),
+        "current_step_idx": _simulator_current_step_idx,
+        "total_steps": len(_simulator_steps),
+        "sensor_readout": chip.read_optical_sensor(),
+    }
+
+
+# ─── Cyber-Physical Attack Lab APIs ──────────────────────────────────────────
+
+class TamperAttackRequest(BaseModel):
+    true_glucose: float = 220.0
+    falsified_glucose: float = 110.0
+
+
+@app.post("/api/attacks/tamper")
+def run_tamper_attack(req: TamperAttackRequest):
+    """Execute Ali et al. glucose assay falsification attack simulation."""
+    attack_lab = AttackLab()
+    result = attack_lab.run_glucose_tamper_attack(
+        true_glucose=float(req.true_glucose),
+        falsified_glucose=float(req.falsified_glucose),
+    )
+    return result
+
+
+@app.post("/api/attacks/replay")
+def run_replay_attack():
+    """Execute diagnostic message replay attack simulation."""
+    attack_lab = AttackLab()
+    result = attack_lab.run_replay_attack()
+    return result
+
+
+@app.get("/api/attacks/quantum-threat")
+def run_quantum_threat_analysis():
+    """Retrieve comparative quantum security threat matrix."""
+    attack_lab = AttackLab()
+    result = attack_lab.run_quantum_threat_comparison()
+    return result
 
 
 # Mount built React SPA if available
