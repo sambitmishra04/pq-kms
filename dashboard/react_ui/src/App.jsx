@@ -24,6 +24,10 @@ const Icons = {
   fastForward: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><polygon points="13 19 22 12 13 5 13 19"/><polygon points="2 19 11 12 2 5 2 19"/></svg>,
   rotateCcw: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>,
   droplet: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>,
+  user: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  logOut: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
+  unlock: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>,
+  hospital: (p) => <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"/><line x1="10" x2="14" y1="9" y2="9"/><line x1="12" x2="12" y1="7" y2="11"/></svg>,
 };
 
 // ─── Chart Component Wrapper ──────────────────────────────────────────────────
@@ -143,12 +147,52 @@ function exportToCsv(filename, rows) {
 
 // ─── Main Application ─────────────────────────────────────────────────────────
 export default function App() {
-  const [activeTab, setActiveTab] = useState('patients');
+  // Authentication & Current User State
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pqkms_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loginUsername, setLoginUsername] = useState('admin');
+  const [loginPassword, setLoginPassword] = useState('admin123');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState(null);
+
+  // Active Tab state
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pqkms_user');
+      if (saved) {
+        const u = JSON.parse(saved);
+        return u.role === 'DOCTOR' ? 'doctor_telemetry' : 'devices';
+      }
+    } catch {}
+    return 'devices';
+  });
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefreshSecs, setAutoRefreshSecs] = useState(0); // 0 = off
   const [backendOnline, setBackendOnline] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  // Doctor Telemetry & Key Exchange State
+  const [doctorBiochips, setDoctorBiochips] = useState([]);
+  const [selectedBiochipId, setSelectedBiochipId] = useState('DMFB-ALPHA');
+  const [doctorEncryptedPackage, setDoctorEncryptedPackage] = useState(null);
+  const [doctorKeyExchangeLoading, setDoctorKeyExchangeLoading] = useState(false);
+  const [doctorDecryptedData, setDoctorDecryptedData] = useState(null);
+  const [doctorDecryptLoading, setDoctorDecryptLoading] = useState(false);
+  const [doctorAccessError, setDoctorAccessError] = useState(null);
+  const [doctorPatientSearch, setDoctorPatientSearch] = useState('');
+  const [doctorRiskFilter, setDoctorRiskFilter] = useState('ALL');
+
+  // Admin Authorizations State
+  const [adminAuthorizations, setAdminAuthorizations] = useState(null);
+  const [adminAuthorizationsLoading, setAdminAuthorizationsLoading] = useState(false);
 
   // Data states
   const [info, setInfo] = useState({});
@@ -417,6 +461,153 @@ export default function App() {
     }
   };
 
+  // ─── Authentication & RBAC Handlers ─────────────────────────────────────────
+  const handleLogin = async (username, password) => {
+    setLoginLoading(true);
+    setLoginError(null);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.trim(), password: password.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Login failed');
+      }
+      localStorage.setItem('pqkms_user', JSON.stringify(data.user));
+      setCurrentUser(data.user);
+      if (data.user.role === 'DOCTOR') {
+        setActiveTab('doctor_telemetry');
+        fetchDoctorBiochips(data.user.username);
+      } else {
+        setActiveTab('devices');
+        fetchAdminAuthorizations();
+      }
+      fetchAllData(false);
+    } catch (err) {
+      setLoginError(err.message);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('pqkms_user');
+    setCurrentUser(null);
+    setDoctorEncryptedPackage(null);
+    setDoctorDecryptedData(null);
+    setDoctorAccessError(null);
+  };
+
+  const fetchDoctorBiochips = async (docId) => {
+    const targetDoc = docId || currentUser?.username;
+    if (!targetDoc) return;
+    try {
+      const res = await fetch(`/api/doctor/biochips?doctor_id=${encodeURIComponent(targetDoc)}`).then(r => r.json());
+      setDoctorBiochips(res.biochips || []);
+    } catch (err) {
+      console.error('Failed to fetch doctor biochips:', err);
+    }
+  };
+
+  const handleDoctorExchange = async (biochipId) => {
+    if (!currentUser) return;
+    setDoctorKeyExchangeLoading(true);
+    setDoctorAccessError(null);
+    setDoctorEncryptedPackage(null);
+    setDoctorDecryptedData(null);
+    try {
+      const res = await fetch('/api/doctor/exchange-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doctor_id: currentUser.username,
+          biochip_id: biochipId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Key exchange failed');
+      }
+      setDoctorEncryptedPackage(data);
+      fetchAllData(false);
+    } catch (err) {
+      setDoctorAccessError(err.message);
+      fetchAllData(false);
+    } finally {
+      setDoctorKeyExchangeLoading(false);
+    }
+  };
+
+  const handleDoctorDecrypt = async () => {
+    if (!doctorEncryptedPackage || !currentUser) return;
+    setDoctorDecryptLoading(true);
+    setDoctorAccessError(null);
+    try {
+      const res = await fetch('/api/doctor/decrypt-telemetry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doctor_id: currentUser.username,
+          biochip_id: doctorEncryptedPackage.biochip_id,
+          session_id: doctorEncryptedPackage.session_id,
+          message_id: doctorEncryptedPackage.message_id,
+          nonce_c_b64: doctorEncryptedPackage.nonce_c_b64,
+          doctor_kem_sk_b64: doctorEncryptedPackage.doctor_kem_sk_b64,
+          kem_ciphertext_b64: doctorEncryptedPackage.kem_ciphertext_b64,
+          aead_ciphertext_b64: doctorEncryptedPackage.aead_ciphertext_b64,
+          nonce_b64: doctorEncryptedPackage.nonce_b64,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Decryption failed');
+      }
+      setDoctorDecryptedData(data);
+      fetchAllData(false);
+    } catch (err) {
+      setDoctorAccessError(err.message);
+    } finally {
+      setDoctorDecryptLoading(false);
+    }
+  };
+
+  const fetchAdminAuthorizations = async () => {
+    setAdminAuthorizationsLoading(true);
+    try {
+      const res = await fetch('/api/admin/authorizations').then(r => r.json());
+      setAdminAuthorizations(res);
+    } catch (err) {
+      console.error('Failed to fetch admin authorizations:', err);
+    } finally {
+      setAdminAuthorizationsLoading(false);
+    }
+  };
+
+  const handleToggleAuthorization = async (docId, biochipId) => {
+    try {
+      await fetch('/api/admin/authorizations/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ doctor_id: docId, biochip_id: biochipId }),
+      });
+      await fetchAdminAuthorizations();
+      fetchAllData(false);
+    } catch (err) {
+      console.error('Failed to toggle authorization:', err);
+    }
+  };
+
+  // Sync role-dependent data on initial mount or login
+  useEffect(() => {
+    if (currentUser?.role === 'DOCTOR') {
+      fetchDoctorBiochips(currentUser.username);
+    } else if (currentUser?.role === 'ADMIN') {
+      fetchAdminAuthorizations();
+    }
+  }, [currentUser?.username, currentUser?.role]);
+
   // ─── Filtered Data Memoization ──────────────────────────────────────────────
   const filteredDevices = useMemo(() => {
     return (devicesData.devices || []).filter(d => {
@@ -550,6 +741,183 @@ export default function App() {
     };
   }, [patientStats.non_diabetic_count, patientStats.diabetic_count]);
 
+  // Doctor Clinical Telemetry & Cohort Memos
+  const filteredDoctorPatients = useMemo(() => {
+    if (!doctorDecryptedData || !doctorDecryptedData.patients) return [];
+    return doctorDecryptedData.patients.filter(p => {
+      const s = doctorPatientSearch.trim().toLowerCase();
+      const pId = String(p.id || p.patient_id || '').toLowerCase();
+      const matchSearch =
+        !s ||
+        pId.includes(s) ||
+        String(p.age).includes(s);
+      const risk = p.clinical_status || p.clinical_risk || '';
+      const matchRisk = doctorRiskFilter === 'ALL' || risk === doctorRiskFilter;
+      return matchSearch && matchRisk;
+    });
+  }, [doctorDecryptedData, doctorPatientSearch, doctorRiskFilter]);
+
+  const doctorCohortStats = useMemo(() => {
+    if (!doctorDecryptedData || !doctorDecryptedData.patients || !doctorDecryptedData.patients.length) {
+      return { total: 0, meanGlucose: '0.0', diabeticCount: 0, diabeticPct: '0.0', highRiskCount: 0 };
+    }
+    const pts = doctorDecryptedData.patients;
+    const total = pts.length;
+    const totalGlucose = pts.reduce((acc, p) => acc + (Number(p.glucose) || 0), 0);
+    const meanGlucose = (totalGlucose / total).toFixed(1);
+    const diabeticCount = pts.filter(p => Number(p.outcome) === 1).length;
+    const diabeticPct = ((diabeticCount / total) * 100).toFixed(1);
+    const highRiskCount = pts.filter(p => (p.clinical_status === 'DIABETIC' || p.clinical_risk === 'HIGH' || p.clinical_risk === 'CRITICAL_HIGH')).length;
+    return { total, meanGlucose, diabeticCount, diabeticPct, highRiskCount };
+  }, [doctorDecryptedData]);
+
+  // If user is not authenticated, render Login Screen
+  if (!currentUser) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'radial-gradient(ellipse at 50% 20%, #0f2b46 0%, #070d18 100%)', color: '#f1f5f9', padding: '32px 16px', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ maxWidth: 520, width: '100%' }}>
+          {/* Logo & Brand Header */}
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ display: 'inline-flex', padding: 14, background: 'rgba(6, 182, 212, 0.12)', border: '1px solid rgba(6, 182, 212, 0.3)', borderRadius: 16, marginBottom: 12 }}>
+              <Icons.shield size={38} style={{ color: '#06b6d4' }} />
+            </div>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#f8fafc', margin: 0 }}>
+              PQ-KMS Server Gateway
+            </h1>
+            <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: 6, marginBottom: 12 }}>
+              Post-Quantum Key Management & Healthcare IoT Telemetry
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 9999, background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 600 }}>ML-KEM-768</span>
+              <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 9999, background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', fontWeight: 600 }}>ML-DSA-65</span>
+              <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 9999, background: 'rgba(192, 132, 252, 0.15)', color: '#c084fc', border: '1px solid rgba(192, 132, 252, 0.3)', fontWeight: 600 }}>AES-256-GCM</span>
+            </div>
+          </div>
+
+          {/* Login Card */}
+          <div className="glass-card" style={{ padding: 28, borderRadius: 16, background: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(148, 163, 184, 0.2)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f8fafc', marginBottom: 16 }}>
+              Terminal Authentication
+            </h2>
+
+            {loginError && (
+              <div style={{ background: 'rgba(244, 63, 94, 0.12)', border: '1px solid rgba(244, 63, 94, 0.3)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, color: '#fb7185', fontSize: '0.82rem' }}>
+                <Icons.alert size={16} />
+                <span>{loginError}</span>
+              </div>
+            )}
+
+            <form onSubmit={(e) => { e.preventDefault(); handleLogin(loginUsername, loginPassword); }}>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600, marginBottom: 6 }}>
+                  Operator Username
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                    required
+                    style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(148, 163, 184, 0.25)', borderRadius: 8, color: '#f8fafc', fontSize: '0.85rem', outline: 'none' }}
+                    placeholder="Enter username (e.g. admin, dr.sharma)"
+                  />
+                  <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}>
+                    <Icons.user size={16} />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600, marginBottom: 6 }}>
+                  Password
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                    style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(148, 163, 184, 0.25)', borderRadius: 8, color: '#f8fafc', fontSize: '0.85rem', outline: 'none' }}
+                    placeholder="Enter password"
+                  />
+                  <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}>
+                    <Icons.lock size={16} />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loginLoading}
+                style={{ width: '100%', padding: '10px 16px', borderRadius: 8, background: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)', color: '#090d16', fontWeight: 800, border: 'none', cursor: loginLoading ? 'not-allowed' : 'pointer', fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.15s ease' }}
+              >
+                {loginLoading ? <Icons.refresh size={16} className="live-pulse" /> : <Icons.unlock size={16} />}
+                <span>{loginLoading ? 'Authenticating...' : 'Sign In to PQ-KMS'}</span>
+              </button>
+            </form>
+
+            {/* Quick Demo Logins Section */}
+            <div style={{ marginTop: 24, paddingTop: 18, borderTop: '1px solid rgba(148, 163, 184, 0.15)' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+                Demo Accounts (1-Click Evaluation)
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => { setLoginUsername('admin'); setLoginPassword('admin123'); handleLogin('admin', 'admin123'); }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 8, background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.25)', color: '#f8fafc', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s ease' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: '1.2rem' }}>🛡️</span>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8' }}>Admin (KMS Security Officer)</div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>admin / admin123 • Full server control & clearances</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 4, background: 'rgba(6, 182, 212, 0.2)', color: '#38bdf8', fontWeight: 700 }}>ADMIN</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setLoginUsername('dr.sharma'); setLoginPassword('doc123'); handleLogin('dr.sharma', 'doc123'); }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 8, background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', color: '#f8fafc', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s ease' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: '1.2rem' }}>🩺</span>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#34d399' }}>Dr. Sharma (Chief Endocrinologist)</div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>dr.sharma / doc123 • Authorized: Alpha & ICU-01</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 700 }}>DOCTOR</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setLoginUsername('dr.alvarez'); setLoginPassword('doc123'); handleLogin('dr.alvarez', 'doc123'); }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 8, background: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.25)', color: '#f8fafc', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s ease' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: '1.2rem' }}>🩺</span>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#a78bfa' }}>Dr. Alvarez (Metabolic Care)</div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>dr.alvarez / doc123 • Authorized: Beta & Clinic-02</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 4, background: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa', fontWeight: 700 }}>DOCTOR</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: 18, color: '#64748b', fontSize: '0.72rem' }}>
+            PQ-KMS Cryptographic Security Gateway • SHA-256 Tamper-Evident Audit Logging Enabled
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* ─── Top Modern Header Bar ─────────────────────────────────────────── */}
@@ -659,22 +1027,52 @@ export default function App() {
               <Icons.cpu size={14} />
               System Specs
             </button>
+
+            {/* Logged in User Badge & Sign Out */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 10px', borderRadius: 8, background: 'rgba(30, 41, 59, 0.9)', border: '1px solid rgba(148, 163, 184, 0.25)' }}>
+              <div style={{ fontSize: '1.1rem' }}>{currentUser.avatar || (currentUser.role === 'ADMIN' ? '🛡️' : '🩺')}</div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>{currentUser.name}</span>
+                  <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: 4, background: currentUser.role === 'ADMIN' ? 'rgba(6, 182, 212, 0.25)' : 'rgba(16, 185, 129, 0.25)', color: currentUser.role === 'ADMIN' ? '#38bdf8' : '#34d399', fontWeight: 800 }}>
+                    {currentUser.role}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
+                  {currentUser.specialty || currentUser.username}
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Sign Out of Session"
+                style={{ marginLeft: 4, padding: '4px 8px', borderRadius: 6, background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', color: '#fb7185', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', fontWeight: 600 }}
+              >
+                <Icons.logOut size={13} />
+                <span>Exit</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* ─── Navigation Tabs ──────────────────────────────────────────────── */}
         <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 24px', display: 'flex', gap: 6, overflowX: 'auto' }}>
-          {[
-            { id: 'patients', label: '🩺 Patient Vitals (Doctors)', icon: Icons.activity, count: patientStats.total_patients || 768 },
-            { id: 'crypto', label: '🔬 Crypto Inspector', icon: Icons.lock },
+          {(currentUser.role === 'DOCTOR' ? [
+            { id: 'doctor_telemetry', label: '🩺 Quantum Telemetry & Decryption', icon: Icons.activity },
             { id: 'biochip', label: '🧬 Biochip Digital Twin', icon: Icons.droplet },
-            { id: 'attacks', label: '🎯 Attack Sandbox', icon: Icons.target },
+            { id: 'crypto', label: '🔬 Crypto Inspector', icon: Icons.lock },
+            { id: 'audit', label: '📜 Access Audit Log', icon: Icons.fileText, count: auditData.events ? auditData.events.length : 0 },
+          ] : [
             { id: 'devices', label: 'Registered Devices', icon: Icons.device, count: devicesData.total },
             { id: 'sessions', label: 'Session Keys', icon: Icons.key, count: sessionsData.total },
             { id: 'audit', label: 'Tamper-Evident Audit', icon: Icons.fileText, count: auditData.events ? auditData.events.length : 0 },
+            { id: 'admin_clearances', label: '🛡️ Doctor Clearances', icon: Icons.shield },
+            { id: 'patients', label: '🩺 Cohort Vitals (All Assays)', icon: Icons.activity, count: patientStats.total_patients || 768 },
+            { id: 'biochip', label: '🧬 Biochip Digital Twin', icon: Icons.droplet },
+            { id: 'attacks', label: '🎯 Attack Sandbox', icon: Icons.target },
+            { id: 'crypto', label: '🔬 Crypto Inspector', icon: Icons.lock },
             { id: 'benchmarks', label: 'Benchmarks & Papers', icon: Icons.chart },
             { id: 'security', label: 'Security & CRL', icon: Icons.shield },
-          ].map(tab => {
+          ]).map(tab => {
             const IconCmp = tab.icon;
             const active = activeTab === tab.id;
             return (
@@ -721,6 +1119,465 @@ export default function App() {
 
       {/* ─── Main Content Container ────────────────────────────────────────── */}
       <main style={{ maxWidth: 1440, margin: '0 auto', padding: '24px', flex: 1, width: '100%' }}>
+        {/* ─── TAB: DOCTOR TELEMETRY & QUANTUM DECRYPTION TERMINAL ────────── */}
+        {activeTab === 'doctor_telemetry' && (
+          <div>
+            {/* Header info */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#f8fafc' }}>
+                    🩺 Clinical Biochip Telemetry &amp; In-Transit Decryption Terminal
+                  </h2>
+                  <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 600 }}>
+                    Doctor Portal (RBAC Protected)
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.84rem', color: '#94a3b8', marginTop: 4 }}>
+                  Post-quantum authenticated telemetry access for {currentUser.name} ({currentUser.specialty}). Data is encrypted in-transit via ML-KEM-768 &amp; AES-256-GCM.
+                </p>
+              </div>
+
+              {doctorDecryptedData && doctorDecryptedData.patients && (
+                <button
+                  onClick={() => exportToCsv(`biochip_${selectedBiochipId}_telemetry`, doctorDecryptedData.patients)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    color: '#cbd5e1',
+                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Icons.download size={14} />
+                  Export Decrypted Telemetry ({doctorDecryptedData.patients.length} Records)
+                </button>
+              )}
+            </div>
+
+            {/* Target Biochip Selection Cards */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#cbd5e1', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icons.device size={16} style={{ color: '#06b6d4' }} />
+                <span>Select Biochip Node for Quantum Handshake:</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
+                {doctorBiochips.map(bc => {
+                  const isSelected = selectedBiochipId === bc.biochip_id;
+                  return (
+                    <div
+                      key={bc.biochip_id}
+                      onClick={() => {
+                        setSelectedBiochipId(bc.biochip_id);
+                        setDoctorEncryptedPackage(null);
+                        setDoctorDecryptedData(null);
+                        setDoctorAccessError(null);
+                      }}
+                      className="glass-card"
+                      style={{
+                        padding: 16,
+                        cursor: 'pointer',
+                        borderRadius: 12,
+                        background: isSelected ? 'rgba(6, 182, 212, 0.08)' : 'rgba(15, 23, 42, 0.6)',
+                        border: isSelected ? '2px solid #06b6d4' : '1px solid rgba(148, 163, 184, 0.15)',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <span className="font-mono" style={{ fontSize: '0.85rem', fontWeight: 800, color: isSelected ? '#38bdf8' : '#f8fafc' }}>
+                          {bc.biochip_id}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: 9999,
+                            background: bc.authorized ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)',
+                            color: bc.authorized ? '#34d399' : '#fb7185',
+                            border: `1px solid ${bc.authorized ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.3)'}`,
+                          }}
+                        >
+                          {bc.authorized ? '● Clearance Approved' : '🔒 Clearance Restricted'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#e2e8f0', marginBottom: 4 }}>
+                        {bc.name}
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginBottom: 6 }}>
+                        📍 {bc.location}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748b', paddingTop: 6, borderTop: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                        <span>{bc.assay_type}</span>
+                        <strong style={{ color: '#94a3b8' }}>{bc.patient_count} Assays</strong>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Action Bar */}
+            <div className="glass-card" style={{ padding: 18, borderRadius: 12, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14, background: 'rgba(30, 41, 59, 0.5)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ padding: 8, background: 'rgba(6, 182, 212, 0.15)', borderRadius: 8, color: '#06b6d4' }}>
+                  <Icons.key size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Active Target Biochip</div>
+                  <div className="font-mono" style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8' }}>
+                    {selectedBiochipId}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => handleDoctorExchange(selectedBiochipId)}
+                  disabled={doctorKeyExchangeLoading}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 18px',
+                    borderRadius: 8,
+                    background: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
+                    color: '#090d16',
+                    fontWeight: 800,
+                    border: 'none',
+                    cursor: doctorKeyExchangeLoading ? 'not-allowed' : 'pointer',
+                    fontSize: '0.85rem',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {doctorKeyExchangeLoading ? <Icons.refresh size={15} className="live-pulse" /> : <Icons.play size={15} />}
+                  <span>{doctorKeyExchangeLoading ? 'Executing Key Exchange (ML-KEM-768)...' : '📡 Request In-Transit Quantum-Encrypted Telemetry'}</span>
+                </button>
+
+                <button
+                  onClick={() => handleDoctorExchange('DMFB-RESEARCH-03')}
+                  disabled={doctorKeyExchangeLoading}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    background: 'rgba(244, 63, 94, 0.12)',
+                    color: '#fb7185',
+                    border: '1px solid rgba(244, 63, 94, 0.3)',
+                    cursor: doctorKeyExchangeLoading ? 'not-allowed' : 'pointer',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                  }}
+                  title="Simulate accessing an unauthorized node to verify 403 Forbidden enforcement and tamper-evident audit logging"
+                >
+                  <Icons.alert size={14} />
+                  <span>🧪 Test Unauthorized Biochip (DMFB-RESEARCH-03)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Error / Unauthorized Alert */}
+            {doctorAccessError && (
+              <div style={{ background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.35)', borderRadius: 12, padding: 18, marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ padding: 6, background: 'rgba(244, 63, 94, 0.2)', borderRadius: 8, color: '#fb7185' }}>
+                    <Icons.alert size={20} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fb7185', marginBottom: 4 }}>
+                      ⛔ Cryptographic Authorization Denied (HTTP 403 Forbidden)
+                    </div>
+                    <div style={{ fontSize: '0.84rem', color: '#fecdd3', marginBottom: 8 }}>
+                      {doctorAccessError}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <span>Tamper-Evident Security Log: An unauthorized access attempt has been permanently logged to the SHA-256 hash-chained ledger.</span>
+                      <button
+                        onClick={() => setActiveTab('audit')}
+                        style={{ padding: '3px 10px', borderRadius: 4, background: 'rgba(244, 63, 94, 0.2)', color: '#fb7185', border: '1px solid rgba(244, 63, 94, 0.4)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Inspect Audit Log
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* In-Transit Encrypted Package Visualizer */}
+            {doctorEncryptedPackage && (
+              <div className="glass-card" style={{ padding: 22, borderRadius: 14, marginBottom: 24, border: '1px solid rgba(6, 182, 212, 0.35)', background: 'rgba(15, 23, 42, 0.85)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ padding: 8, background: 'rgba(6, 182, 212, 0.15)', borderRadius: 8, color: '#38bdf8' }}>
+                      <Icons.lock size={20} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>
+                        📦 In-Transit Encrypted Telemetry Package (Session {doctorEncryptedPackage.session_id.slice(0, 8)}...)
+                      </h3>
+                      <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '2px 0 0 0' }}>
+                        Encapsulated under NIST FIPS 203 ML-KEM-768 &amp; signed with FIPS 204 ML-DSA-65. Telemetry is in ciphertext form.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleDoctorDecrypt}
+                    disabled={doctorDecryptLoading}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '10px 18px',
+                      borderRadius: 8,
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      border: 'none',
+                      cursor: doctorDecryptLoading ? 'not-allowed' : 'pointer',
+                      fontSize: '0.85rem',
+                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+                    }}
+                  >
+                    {doctorDecryptLoading ? <Icons.refresh size={15} className="live-pulse" /> : <Icons.unlock size={15} />}
+                    <span>{doctorDecryptLoading ? 'Decapsulating & Decrypting...' : '🔓 Decapsulate & Decrypt with Doctor\'s Secret Key'}</span>
+                  </button>
+                </div>
+
+                {/* 4 Cryptographic Components Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
+                  <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: 14, borderRadius: 10, border: '1px solid rgba(148, 163, 184, 0.15)' }}>
+                    <div style={{ fontSize: '0.74rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
+                      1. ML-KEM-768 Ciphertext (c_kem)
+                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8', marginBottom: 4 }}>
+                      {doctorEncryptedPackage.kem_ciphertext_len} Bytes (FIPS 203)
+                    </div>
+                    <div className="font-mono" style={{ fontSize: '0.7rem', color: '#64748b', wordBreak: 'break-all', background: 'rgba(15, 23, 42, 0.7)', padding: 8, borderRadius: 6 }}>
+                      {doctorEncryptedPackage.kem_ciphertext_b64.slice(0, 48)}...
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: 14, borderRadius: 10, border: '1px solid rgba(148, 163, 184, 0.15)' }}>
+                    <div style={{ fontSize: '0.74rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
+                      2. AES-256-GCM Ciphertext (c_payload)
+                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#c084fc', marginBottom: 4 }}>
+                      {doctorEncryptedPackage.aead_ciphertext_len} Bytes + 16B GHASH Tag
+                    </div>
+                    <div className="font-mono" style={{ fontSize: '0.7rem', color: '#64748b', wordBreak: 'break-all', background: 'rgba(15, 23, 42, 0.7)', padding: 8, borderRadius: 6 }}>
+                      {doctorEncryptedPackage.aead_ciphertext_b64.slice(0, 48)}...
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: 14, borderRadius: 10, border: '1px solid rgba(148, 163, 184, 0.15)' }}>
+                    <div style={{ fontSize: '0.74rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
+                      3. Deterministic Nonce (N)
+                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fbbf24', marginBottom: 4 }}>
+                      12 Bytes (96-bit IV)
+                    </div>
+                    <div className="font-mono" style={{ fontSize: '0.7rem', color: '#64748b', wordBreak: 'break-all', background: 'rgba(15, 23, 42, 0.7)', padding: 8, borderRadius: 6 }}>
+                      {doctorEncryptedPackage.nonce_b64}
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: 14, borderRadius: 10, border: '1px solid rgba(148, 163, 184, 0.15)' }}>
+                    <div style={{ fontSize: '0.74rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
+                      4. Server ML-DSA-65 Signature
+                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#34d399', marginBottom: 4 }}>
+                      3,309 Bytes (FIPS 204)
+                    </div>
+                    <div className="font-mono" style={{ fontSize: '0.7rem', color: '#64748b', wordBreak: 'break-all', background: 'rgba(15, 23, 42, 0.7)', padding: 8, borderRadius: 6 }}>
+                      {doctorEncryptedPackage.server_signature_b64.slice(0, 48)}...
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Decrypted Patient Telemetry Section */}
+            {doctorDecryptedData && (
+              <div>
+                {/* Success Banner */}
+                <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: 12, padding: 18, marginBottom: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ padding: 6, background: 'rgba(16, 185, 129, 0.2)', borderRadius: 8, color: '#34d399' }}>
+                        <Icons.check size={20} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#34d399' }}>
+                          ✅ Telemetry Successfully Decrypted &amp; Authenticated ({doctorDecryptedData.record_count} Records)
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: 2 }}>
+                          Shared Secret: <span className="font-mono" style={{ color: '#38bdf8' }}>{doctorDecryptedData.shared_secret_preview}</span> • Derived Session Key: <span className="font-mono" style={{ color: '#a78bfa' }}>{doctorDecryptedData.session_key_preview}</span> • AEAD Tag: <strong style={{ color: '#34d399' }}>VERIFIED AUTHENTIC</strong>
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 700 }}>
+                      End-to-End Quantum-Safe
+                    </span>
+                  </div>
+                </div>
+
+                {/* Cohort KPI Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 20 }}>
+                  <div className="glass-card" style={{ padding: 16, borderLeft: '4px solid #06b6d4' }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                      Decrypted Assays
+                    </div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#38bdf8', marginTop: 4 }}>
+                      {doctorCohortStats.total} Patients
+                    </div>
+                    <div style={{ color: '#64748b', fontSize: '0.72rem', marginTop: 2 }}>
+                      Node: {selectedBiochipId}
+                    </div>
+                  </div>
+
+                  <div className="glass-card" style={{ padding: 16, borderLeft: '4px solid #10b981' }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                      Mean Blood Glucose
+                    </div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#34d399', marginTop: 4 }}>
+                      {doctorCohortStats.meanGlucose} <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>mg/dL</span>
+                    </div>
+                    <div style={{ color: '#64748b', fontSize: '0.72rem', marginTop: 2 }}>
+                      Enzymatic Biosensor Readout
+                    </div>
+                  </div>
+
+                  <div className="glass-card" style={{ padding: 16, borderLeft: '4px solid #f43f5e' }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                      Diabetic Positive
+                    </div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fb7185', marginTop: 4 }}>
+                      {doctorCohortStats.diabeticCount} ({doctorCohortStats.diabeticPct}%)
+                    </div>
+                    <div style={{ color: '#64748b', fontSize: '0.72rem', marginTop: 2 }}>
+                      Clinical Diagnosis = 1
+                    </div>
+                  </div>
+
+                  <div className="glass-card" style={{ padding: 16, borderLeft: '4px solid #f59e0b' }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                      High Clinical Risk
+                    </div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fbbf24', marginTop: 4 }}>
+                      {doctorCohortStats.highRiskCount} Patients
+                    </div>
+                    <div style={{ color: '#64748b', fontSize: '0.72rem', marginTop: 2 }}>
+                      Glucose &gt; 180 or Impaired
+                    </div>
+                  </div>
+                </div>
+
+                {/* Filter and Search Bar for Doctor's Decrypted Data */}
+                <div className="glass-card" style={{ padding: 14, borderRadius: 10, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 240 }}>
+                    <div style={{ position: 'relative', width: '100%', maxWidth: 300 }}>
+                      <input
+                        type="text"
+                        value={doctorPatientSearch}
+                        onChange={e => setDoctorPatientSearch(e.target.value)}
+                        placeholder="Search patient ID or age..."
+                        style={{ width: '100%', padding: '6px 10px 6px 30px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(148, 163, 184, 0.2)', borderRadius: 6, color: '#f8fafc', fontSize: '0.8rem', outline: 'none' }}
+                      />
+                      <div style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}>
+                        <Icons.search size={14} />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: '#94a3b8' }}>
+                      <span>Risk:</span>
+                      <select
+                        value={doctorRiskFilter}
+                        onChange={e => setDoctorRiskFilter(e.target.value)}
+                        style={{ background: 'rgba(30, 41, 59, 0.8)', color: '#f8fafc', border: '1px solid rgba(148, 163, 184, 0.2)', borderRadius: 6, padding: '4px 8px', fontSize: '0.78rem', outline: 'none' }}
+                      >
+                        <option value="ALL">All Risk Levels</option>
+                        <option value="NORMAL">Normal</option>
+                        <option value="PRE_DIABETIC">Pre-Diabetic</option>
+                        <option value="HIGH">High Risk</option>
+                        <option value="CRITICAL_HIGH">Critical High</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                    Showing <strong>{filteredDoctorPatients.length}</strong> of {doctorDecryptedData.patients.length} records
+                  </div>
+                </div>
+
+                {/* Patient Vitals Table */}
+                <div className="glass-card" style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(148, 163, 184, 0.15)' }}>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Patient ID</th>
+                          <th>Age</th>
+                          <th>Glucose (mg/dL)</th>
+                          <th>Blood Pressure</th>
+                          <th>Insulin (μU/mL)</th>
+                          <th>BMI</th>
+                          <th>Outcome</th>
+                          <th>Clinical Risk Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredDoctorPatients.map(pt => (
+                          <tr key={pt.id || pt.patient_id}>
+                            <td className="font-mono" style={{ fontWeight: 700, color: '#38bdf8' }}>
+                              #{pt.id || pt.patient_id}
+                            </td>
+                            <td>{pt.age} yrs</td>
+                            <td>
+                              <strong style={{ color: pt.glucose >= 200 ? '#fb7185' : pt.glucose >= 140 ? '#fbbf24' : '#34d399' }}>
+                                {pt.glucose}
+                              </strong>
+                              <span style={{ fontSize: '0.7rem', color: '#64748b', marginLeft: 4 }}>mg/dL</span>
+                            </td>
+                            <td>{pt.blood_pressure} mm Hg</td>
+                            <td>{pt.insulin || '—'}</td>
+                            <td>{pt.bmi}</td>
+                            <td>
+                              <Badge
+                                status={pt.outcome === 1 ? 'DIABETIC' : 'NORMAL'}
+                                label={pt.outcome === 1 ? 'Diabetic' : 'Normal'}
+                              />
+                            </td>
+                            <td>
+                              <Badge status={pt.clinical_status || pt.clinical_risk} label={pt.risk_label || pt.clinical_status || pt.clinical_risk} />
+                            </td>
+                          </tr>
+                        ))}
+                        {!filteredDoctorPatients.length && (
+                          <tr>
+                            <td colSpan={8} style={{ textAlign: 'center', padding: 28, color: '#64748b' }}>
+                              No decrypted patient records match the filter criteria.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ─── TAB: CLINICAL PATIENT VITALS (DOCTORS PORTAL) ──────────────── */}
         {activeTab === 'patients' && (
           <div>
@@ -2832,6 +3689,126 @@ AAD = device_id || session_id || message_id || counter`}
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: ADMIN DOCTOR CLEARANCES & RBAC MATRIX ─────────────────── */}
+        {activeTab === 'admin_clearances' && (
+          <div>
+            {/* Header info */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#f8fafc' }}>
+                    🛡️ Doctor Biochip Access Control &amp; Cryptographic Clearance Matrix
+                  </h2>
+                  <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 9999, background: 'rgba(6, 182, 212, 0.15)', color: '#38bdf8', border: '1px solid rgba(6, 182, 212, 0.3)', fontWeight: 600 }}>
+                    KMS Admin Governance
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.84rem', color: '#94a3b8', marginTop: 4 }}>
+                  Configure Role-Based Access Control (RBAC) clearances for medical personnel. Granting or revoking clearance immediately alters post-quantum key exchange authorization on the KMS server.
+                </p>
+              </div>
+
+              <button
+                onClick={fetchAdminAuthorizations}
+                disabled={adminAuthorizationsLoading}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 16px',
+                  borderRadius: 8,
+                  background: 'rgba(30, 41, 59, 0.8)',
+                  color: '#f8fafc',
+                  border: '1px solid rgba(148, 163, 184, 0.2)',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: adminAuthorizationsLoading ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <Icons.refresh size={14} className={adminAuthorizationsLoading ? 'live-pulse' : ''} />
+                <span>{adminAuthorizationsLoading ? 'Refreshing...' : 'Refresh Matrix'}</span>
+              </button>
+            </div>
+
+            {/* Matrix Table */}
+            <div className="glass-card" style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(148, 163, 184, 0.15)', marginBottom: 20 }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th style={{ minWidth: 220 }}>Clinician / Doctor</th>
+                      <th style={{ minWidth: 200 }}>Department &amp; Specialty</th>
+                      {(adminAuthorizations?.all_biochips || ['DMFB-ALPHA', 'DMFB-ICU-01', 'DMFB-BETA', 'DMFB-CLINIC-02', 'DMFB-RESEARCH-03']).map(chipId => (
+                        <th key={chipId} className="font-mono" style={{ textAlign: 'center', minWidth: 150 }}>
+                          {chipId}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(adminAuthorizations?.doctors || []).map(doc => (
+                      <tr key={doc.username}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span style={{ fontSize: '1.2rem' }}>🩺</span>
+                            <div>
+                              <div style={{ fontWeight: 700, color: '#f8fafc' }}>{doc.name}</div>
+                              <div className="font-mono" style={{ fontSize: '0.72rem', color: '#64748b' }}>@{doc.username}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>
+                          {doc.specialty}
+                        </td>
+                        {(adminAuthorizations?.all_biochips || []).map(chipId => {
+                          const isAuthorized = doc.authorized_biochips?.includes(chipId);
+                          return (
+                            <td key={chipId} style={{ textAlign: 'center' }}>
+                              <button
+                                onClick={() => handleToggleAuthorization(doc.username, chipId)}
+                                style={{
+                                  padding: '6px 14px',
+                                  borderRadius: 6,
+                                  border: `1px solid ${isAuthorized ? 'rgba(16, 185, 129, 0.4)' : 'rgba(244, 63, 94, 0.3)'}`,
+                                  background: isAuthorized ? 'rgba(16, 185, 129, 0.15)' : 'rgba(30, 41, 59, 0.6)',
+                                  color: isAuthorized ? '#34d399' : '#94a3b8',
+                                  fontSize: '0.74rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                  minWidth: 110,
+                                }}
+                                title={`Click to ${isAuthorized ? 'REVOKE' : 'GRANT'} access to ${chipId}`}
+                              >
+                                {isAuthorized ? '✓ Authorized' : '🔒 Restricted'}
+                              </button>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Audit & Security Note */}
+            <div className="glass-card" style={{ padding: 18, borderRadius: 10, background: 'rgba(6, 182, 212, 0.05)', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Icons.shield size={20} style={{ color: '#06b6d4' }} />
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc' }}>
+                    Real-Time Cryptographic Enforcement &amp; SHA-256 Audit Trail
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: 2 }}>
+                    Every clearance grant and revoke instantly updates the server authorization table and generates an immutable block in the SHA-256 tamper-evident ledger. When unauthorized doctors request key encapsulation, the KMS server rejects the handshake with HTTP 403 Forbidden.
+                  </div>
+                </div>
               </div>
             </div>
           </div>

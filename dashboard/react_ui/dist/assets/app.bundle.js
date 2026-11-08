@@ -417,6 +417,86 @@ const Icons = {
     strokeLinejoin: "round"
   }, p), /*#__PURE__*/React.createElement("path", {
     d: "M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"
+  })),
+  user: p => /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24",
+    width: p.size || 18,
+    height: p.size || 18,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, p), /*#__PURE__*/React.createElement("path", {
+    d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "7",
+    r: "4"
+  })),
+  logOut: p => /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24",
+    width: p.size || 18,
+    height: p.size || 18,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, p), /*#__PURE__*/React.createElement("path", {
+    d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
+  }), /*#__PURE__*/React.createElement("polyline", {
+    points: "16 17 21 12 16 7"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "21",
+    x2: "9",
+    y1: "12",
+    y2: "12"
+  })),
+  unlock: p => /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24",
+    width: p.size || 18,
+    height: p.size || 18,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, p), /*#__PURE__*/React.createElement("rect", {
+    width: "18",
+    height: "11",
+    x: "3",
+    y: "11",
+    rx: "2",
+    ry: "2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M7 11V7a5 5 0 0 1 9.9-1"
+  })),
+  hospital: p => /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24",
+    width: p.size || 18,
+    height: p.size || 18,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, p), /*#__PURE__*/React.createElement("path", {
+    d: "M3 21h18"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "10",
+    x2: "14",
+    y1: "9",
+    y2: "9"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "12",
+    x2: "12",
+    y1: "7",
+    y2: "11"
   }))
 };
 
@@ -562,12 +642,51 @@ function exportToCsv(filename, rows) {
 
 // ─── Main Application ─────────────────────────────────────────────────────────
 function App() {
-  const [activeTab, setActiveTab] = useState('patients');
+  // Authentication & Current User State
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pqkms_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loginUsername, setLoginUsername] = useState('admin');
+  const [loginPassword, setLoginPassword] = useState('admin123');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState(null);
+
+  // Active Tab state
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pqkms_user');
+      if (saved) {
+        const u = JSON.parse(saved);
+        return u.role === 'DOCTOR' ? 'doctor_telemetry' : 'devices';
+      }
+    } catch {}
+    return 'devices';
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefreshSecs, setAutoRefreshSecs] = useState(0); // 0 = off
   const [backendOnline, setBackendOnline] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  // Doctor Telemetry & Key Exchange State
+  const [doctorBiochips, setDoctorBiochips] = useState([]);
+  const [selectedBiochipId, setSelectedBiochipId] = useState('DMFB-ALPHA');
+  const [doctorEncryptedPackage, setDoctorEncryptedPackage] = useState(null);
+  const [doctorKeyExchangeLoading, setDoctorKeyExchangeLoading] = useState(false);
+  const [doctorDecryptedData, setDoctorDecryptedData] = useState(null);
+  const [doctorDecryptLoading, setDoctorDecryptLoading] = useState(false);
+  const [doctorAccessError, setDoctorAccessError] = useState(null);
+  const [doctorPatientSearch, setDoctorPatientSearch] = useState('');
+  const [doctorRiskFilter, setDoctorRiskFilter] = useState('ALL');
+
+  // Admin Authorizations State
+  const [adminAuthorizations, setAdminAuthorizations] = useState(null);
+  const [adminAuthorizationsLoading, setAdminAuthorizationsLoading] = useState(false);
 
   // Data states
   const [info, setInfo] = useState({});
@@ -914,6 +1033,161 @@ function App() {
     }
   };
 
+  // ─── Authentication & RBAC Handlers ─────────────────────────────────────────
+  const handleLogin = async (username, password) => {
+    setLoginLoading(true);
+    setLoginError(null);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: username.trim(),
+          password: password.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Login failed');
+      }
+      localStorage.setItem('pqkms_user', JSON.stringify(data.user));
+      setCurrentUser(data.user);
+      if (data.user.role === 'DOCTOR') {
+        setActiveTab('doctor_telemetry');
+        fetchDoctorBiochips(data.user.username);
+      } else {
+        setActiveTab('devices');
+        fetchAdminAuthorizations();
+      }
+      fetchAllData(false);
+    } catch (err) {
+      setLoginError(err.message);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+  const handleLogout = () => {
+    localStorage.removeItem('pqkms_user');
+    setCurrentUser(null);
+    setDoctorEncryptedPackage(null);
+    setDoctorDecryptedData(null);
+    setDoctorAccessError(null);
+  };
+  const fetchDoctorBiochips = async docId => {
+    const targetDoc = docId || currentUser?.username;
+    if (!targetDoc) return;
+    try {
+      const res = await fetch(`/api/doctor/biochips?doctor_id=${encodeURIComponent(targetDoc)}`).then(r => r.json());
+      setDoctorBiochips(res.biochips || []);
+    } catch (err) {
+      console.error('Failed to fetch doctor biochips:', err);
+    }
+  };
+  const handleDoctorExchange = async biochipId => {
+    if (!currentUser) return;
+    setDoctorKeyExchangeLoading(true);
+    setDoctorAccessError(null);
+    setDoctorEncryptedPackage(null);
+    setDoctorDecryptedData(null);
+    try {
+      const res = await fetch('/api/doctor/exchange-keys', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          doctor_id: currentUser.username,
+          biochip_id: biochipId
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Key exchange failed');
+      }
+      setDoctorEncryptedPackage(data);
+      fetchAllData(false);
+    } catch (err) {
+      setDoctorAccessError(err.message);
+      fetchAllData(false);
+    } finally {
+      setDoctorKeyExchangeLoading(false);
+    }
+  };
+  const handleDoctorDecrypt = async () => {
+    if (!doctorEncryptedPackage || !currentUser) return;
+    setDoctorDecryptLoading(true);
+    setDoctorAccessError(null);
+    try {
+      const res = await fetch('/api/doctor/decrypt-telemetry', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          doctor_id: currentUser.username,
+          biochip_id: doctorEncryptedPackage.biochip_id,
+          session_id: doctorEncryptedPackage.session_id,
+          message_id: doctorEncryptedPackage.message_id,
+          nonce_c_b64: doctorEncryptedPackage.nonce_c_b64,
+          doctor_kem_sk_b64: doctorEncryptedPackage.doctor_kem_sk_b64,
+          kem_ciphertext_b64: doctorEncryptedPackage.kem_ciphertext_b64,
+          aead_ciphertext_b64: doctorEncryptedPackage.aead_ciphertext_b64,
+          nonce_b64: doctorEncryptedPackage.nonce_b64
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Decryption failed');
+      }
+      setDoctorDecryptedData(data);
+      fetchAllData(false);
+    } catch (err) {
+      setDoctorAccessError(err.message);
+    } finally {
+      setDoctorDecryptLoading(false);
+    }
+  };
+  const fetchAdminAuthorizations = async () => {
+    setAdminAuthorizationsLoading(true);
+    try {
+      const res = await fetch('/api/admin/authorizations').then(r => r.json());
+      setAdminAuthorizations(res);
+    } catch (err) {
+      console.error('Failed to fetch admin authorizations:', err);
+    } finally {
+      setAdminAuthorizationsLoading(false);
+    }
+  };
+  const handleToggleAuthorization = async (docId, biochipId) => {
+    try {
+      await fetch('/api/admin/authorizations/toggle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          doctor_id: docId,
+          biochip_id: biochipId
+        })
+      });
+      await fetchAdminAuthorizations();
+      fetchAllData(false);
+    } catch (err) {
+      console.error('Failed to toggle authorization:', err);
+    }
+  };
+
+  // Sync role-dependent data on initial mount or login
+  useEffect(() => {
+    if (currentUser?.role === 'DOCTOR') {
+      fetchDoctorBiochips(currentUser.username);
+    } else if (currentUser?.role === 'ADMIN') {
+      fetchAdminAuthorizations();
+    }
+  }, [currentUser?.username, currentUser?.role]);
+
   // ─── Filtered Data Memoization ──────────────────────────────────────────────
   const filteredDevices = useMemo(() => {
     return (devicesData.devices || []).filter(d => {
@@ -1017,6 +1291,458 @@ function App() {
       }]
     };
   }, [patientStats.non_diabetic_count, patientStats.diabetic_count]);
+
+  // Doctor Clinical Telemetry & Cohort Memos
+  const filteredDoctorPatients = useMemo(() => {
+    if (!doctorDecryptedData || !doctorDecryptedData.patients) return [];
+    return doctorDecryptedData.patients.filter(p => {
+      const s = doctorPatientSearch.trim().toLowerCase();
+      const pId = String(p.id || p.patient_id || '').toLowerCase();
+      const matchSearch = !s || pId.includes(s) || String(p.age).includes(s);
+      const risk = p.clinical_status || p.clinical_risk || '';
+      const matchRisk = doctorRiskFilter === 'ALL' || risk === doctorRiskFilter;
+      return matchSearch && matchRisk;
+    });
+  }, [doctorDecryptedData, doctorPatientSearch, doctorRiskFilter]);
+  const doctorCohortStats = useMemo(() => {
+    if (!doctorDecryptedData || !doctorDecryptedData.patients || !doctorDecryptedData.patients.length) {
+      return {
+        total: 0,
+        meanGlucose: '0.0',
+        diabeticCount: 0,
+        diabeticPct: '0.0',
+        highRiskCount: 0
+      };
+    }
+    const pts = doctorDecryptedData.patients;
+    const total = pts.length;
+    const totalGlucose = pts.reduce((acc, p) => acc + (Number(p.glucose) || 0), 0);
+    const meanGlucose = (totalGlucose / total).toFixed(1);
+    const diabeticCount = pts.filter(p => Number(p.outcome) === 1).length;
+    const diabeticPct = (diabeticCount / total * 100).toFixed(1);
+    const highRiskCount = pts.filter(p => p.clinical_status === 'DIABETIC' || p.clinical_risk === 'HIGH' || p.clinical_risk === 'CRITICAL_HIGH').length;
+    return {
+      total,
+      meanGlucose,
+      diabeticCount,
+      diabeticPct,
+      highRiskCount
+    };
+  }, [doctorDecryptedData]);
+
+  // If user is not authenticated, render Login Screen
+  if (!currentUser) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'radial-gradient(ellipse at 50% 20%, #0f2b46 0%, #070d18 100%)',
+        color: '#f1f5f9',
+        padding: '32px 16px',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        maxWidth: 520,
+        width: '100%'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: 'center',
+        marginBottom: 28
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'inline-flex',
+        padding: 14,
+        background: 'rgba(6, 182, 212, 0.12)',
+        border: '1px solid rgba(6, 182, 212, 0.3)',
+        borderRadius: 16,
+        marginBottom: 12
+      }
+    }, /*#__PURE__*/React.createElement(Icons.shield, {
+      size: 38,
+      style: {
+        color: '#06b6d4'
+      }
+    })), /*#__PURE__*/React.createElement("h1", {
+      style: {
+        fontSize: '1.75rem',
+        fontWeight: 800,
+        letterSpacing: '-0.02em',
+        color: '#f8fafc',
+        margin: 0
+      }
+    }, "PQ-KMS Server Gateway"), /*#__PURE__*/React.createElement("p", {
+      style: {
+        color: '#94a3b8',
+        fontSize: '0.85rem',
+        marginTop: 6,
+        marginBottom: 12
+      }
+    }, "Post-Quantum Key Management & Healthcare IoT Telemetry"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 6,
+        flexWrap: 'wrap'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: '0.7rem',
+        padding: '2px 8px',
+        borderRadius: 9999,
+        background: 'rgba(56, 189, 248, 0.15)',
+        color: '#38bdf8',
+        border: '1px solid rgba(56, 189, 248, 0.3)',
+        fontWeight: 600
+      }
+    }, "ML-KEM-768"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: '0.7rem',
+        padding: '2px 8px',
+        borderRadius: 9999,
+        background: 'rgba(52, 211, 153, 0.15)',
+        color: '#34d399',
+        border: '1px solid rgba(52, 211, 153, 0.3)',
+        fontWeight: 600
+      }
+    }, "ML-DSA-65"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: '0.7rem',
+        padding: '2px 8px',
+        borderRadius: 9999,
+        background: 'rgba(192, 132, 252, 0.15)',
+        color: '#c084fc',
+        border: '1px solid rgba(192, 132, 252, 0.3)',
+        fontWeight: 600
+      }
+    }, "AES-256-GCM"))), /*#__PURE__*/React.createElement("div", {
+      className: "glass-card",
+      style: {
+        padding: 28,
+        borderRadius: 16,
+        background: 'rgba(15, 23, 42, 0.9)',
+        border: '1px solid rgba(148, 163, 184, 0.2)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+      }
+    }, /*#__PURE__*/React.createElement("h2", {
+      style: {
+        fontSize: '1.1rem',
+        fontWeight: 700,
+        color: '#f8fafc',
+        marginBottom: 16
+      }
+    }, "Terminal Authentication"), loginError && /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: 'rgba(244, 63, 94, 0.12)',
+        border: '1px solid rgba(244, 63, 94, 0.3)',
+        borderRadius: 8,
+        padding: '10px 14px',
+        marginBottom: 16,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        color: '#fb7185',
+        fontSize: '0.82rem'
+      }
+    }, /*#__PURE__*/React.createElement(Icons.alert, {
+      size: 16
+    }), /*#__PURE__*/React.createElement("span", null, loginError)), /*#__PURE__*/React.createElement("form", {
+      onSubmit: e => {
+        e.preventDefault();
+        handleLogin(loginUsername, loginPassword);
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginBottom: 14
+      }
+    }, /*#__PURE__*/React.createElement("label", {
+      style: {
+        display: 'block',
+        fontSize: '0.78rem',
+        color: '#94a3b8',
+        fontWeight: 600,
+        marginBottom: 6
+      }
+    }, "Operator Username"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'relative'
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "text",
+      value: loginUsername,
+      onChange: e => setLoginUsername(e.target.value),
+      required: true,
+      style: {
+        width: '100%',
+        padding: '10px 12px 10px 36px',
+        background: 'rgba(30, 41, 59, 0.8)',
+        border: '1px solid rgba(148, 163, 184, 0.25)',
+        borderRadius: 8,
+        color: '#f8fafc',
+        fontSize: '0.85rem',
+        outline: 'none'
+      },
+      placeholder: "Enter username (e.g. admin, dr.sharma)"
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'absolute',
+        left: 10,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        color: '#64748b'
+      }
+    }, /*#__PURE__*/React.createElement(Icons.user, {
+      size: 16
+    })))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginBottom: 20
+      }
+    }, /*#__PURE__*/React.createElement("label", {
+      style: {
+        display: 'block',
+        fontSize: '0.78rem',
+        color: '#94a3b8',
+        fontWeight: 600,
+        marginBottom: 6
+      }
+    }, "Password"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'relative'
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "password",
+      value: loginPassword,
+      onChange: e => setLoginPassword(e.target.value),
+      required: true,
+      style: {
+        width: '100%',
+        padding: '10px 12px 10px 36px',
+        background: 'rgba(30, 41, 59, 0.8)',
+        border: '1px solid rgba(148, 163, 184, 0.25)',
+        borderRadius: 8,
+        color: '#f8fafc',
+        fontSize: '0.85rem',
+        outline: 'none'
+      },
+      placeholder: "Enter password"
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'absolute',
+        left: 10,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        color: '#64748b'
+      }
+    }, /*#__PURE__*/React.createElement(Icons.lock, {
+      size: 16
+    })))), /*#__PURE__*/React.createElement("button", {
+      type: "submit",
+      disabled: loginLoading,
+      style: {
+        width: '100%',
+        padding: '10px 16px',
+        borderRadius: 8,
+        background: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
+        color: '#090d16',
+        fontWeight: 800,
+        border: 'none',
+        cursor: loginLoading ? 'not-allowed' : 'pointer',
+        fontSize: '0.88rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        transition: 'all 0.15s ease'
+      }
+    }, loginLoading ? /*#__PURE__*/React.createElement(Icons.refresh, {
+      size: 16,
+      className: "live-pulse"
+    }) : /*#__PURE__*/React.createElement(Icons.unlock, {
+      size: 16
+    }), /*#__PURE__*/React.createElement("span", null, loginLoading ? 'Authenticating...' : 'Sign In to PQ-KMS'))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 24,
+        paddingTop: 18,
+        borderTop: '1px solid rgba(148, 163, 184, 0.15)'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        marginBottom: 10
+      }
+    }, "Demo Accounts (1-Click Evaluation)"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: () => {
+        setLoginUsername('admin');
+        setLoginPassword('admin123');
+        handleLogin('admin', 'admin123');
+      },
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '10px 12px',
+        borderRadius: 8,
+        background: 'rgba(6, 182, 212, 0.08)',
+        border: '1px solid rgba(6, 182, 212, 0.25)',
+        color: '#f8fafc',
+        cursor: 'pointer',
+        textAlign: 'left',
+        transition: 'all 0.15s ease'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: '1.2rem'
+      }
+    }, "\uD83D\uDEE1\uFE0F"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: '0.82rem',
+        fontWeight: 700,
+        color: '#38bdf8'
+      }
+    }, "Admin (KMS Security Officer)"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: '0.72rem',
+        color: '#94a3b8'
+      }
+    }, "admin / admin123 \u2022 Full server control & clearances"))), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: '0.7rem',
+        padding: '2px 8px',
+        borderRadius: 4,
+        background: 'rgba(6, 182, 212, 0.2)',
+        color: '#38bdf8',
+        fontWeight: 700
+      }
+    }, "ADMIN")), /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: () => {
+        setLoginUsername('dr.sharma');
+        setLoginPassword('doc123');
+        handleLogin('dr.sharma', 'doc123');
+      },
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '10px 12px',
+        borderRadius: 8,
+        background: 'rgba(16, 185, 129, 0.08)',
+        border: '1px solid rgba(16, 185, 129, 0.25)',
+        color: '#f8fafc',
+        cursor: 'pointer',
+        textAlign: 'left',
+        transition: 'all 0.15s ease'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: '1.2rem'
+      }
+    }, "\uD83E\uDE7A"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: '0.82rem',
+        fontWeight: 700,
+        color: '#34d399'
+      }
+    }, "Dr. Sharma (Chief Endocrinologist)"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: '0.72rem',
+        color: '#94a3b8'
+      }
+    }, "dr.sharma / doc123 \u2022 Authorized: Alpha & ICU-01"))), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: '0.7rem',
+        padding: '2px 8px',
+        borderRadius: 4,
+        background: 'rgba(16, 185, 129, 0.2)',
+        color: '#34d399',
+        fontWeight: 700
+      }
+    }, "DOCTOR")), /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: () => {
+        setLoginUsername('dr.alvarez');
+        setLoginPassword('doc123');
+        handleLogin('dr.alvarez', 'doc123');
+      },
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '10px 12px',
+        borderRadius: 8,
+        background: 'rgba(139, 92, 246, 0.08)',
+        border: '1px solid rgba(139, 92, 246, 0.25)',
+        color: '#f8fafc',
+        cursor: 'pointer',
+        textAlign: 'left',
+        transition: 'all 0.15s ease'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: '1.2rem'
+      }
+    }, "\uD83E\uDE7A"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: '0.82rem',
+        fontWeight: 700,
+        color: '#a78bfa'
+      }
+    }, "Dr. Alvarez (Metabolic Care)"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: '0.72rem',
+        color: '#94a3b8'
+      }
+    }, "dr.alvarez / doc123 \u2022 Authorized: Beta & Clinic-02"))), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: '0.7rem',
+        padding: '2px 8px',
+        borderRadius: 4,
+        background: 'rgba(139, 92, 246, 0.2)',
+        color: '#a78bfa',
+        fontWeight: 700
+      }
+    }, "DOCTOR"))))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: 'center',
+        marginTop: 18,
+        color: '#64748b',
+        fontSize: '0.72rem'
+      }
+    }, "PQ-KMS Cryptographic Security Gateway \u2022 SHA-256 Tamper-Evident Audit Logging Enabled")));
+  }
   return /*#__PURE__*/React.createElement("div", {
     style: {
       minHeight: '100vh',
@@ -1206,7 +1932,68 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement(Icons.cpu, {
     size: 14
-  }), "System Specs"))), /*#__PURE__*/React.createElement("div", {
+  }), "System Specs"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      padding: '4px 10px',
+      borderRadius: 8,
+      background: 'rgba(30, 41, 59, 0.9)',
+      border: '1px solid rgba(148, 163, 184, 0.25)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '1.1rem'
+    }
+  }, currentUser.avatar || (currentUser.role === 'ADMIN' ? '🛡️' : '🩺')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.78rem',
+      fontWeight: 700,
+      color: '#f8fafc',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement("span", null, currentUser.name), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '0.65rem',
+      padding: '1px 6px',
+      borderRadius: 4,
+      background: currentUser.role === 'ADMIN' ? 'rgba(6, 182, 212, 0.25)' : 'rgba(16, 185, 129, 0.25)',
+      color: currentUser.role === 'ADMIN' ? '#38bdf8' : '#34d399',
+      fontWeight: 800
+    }
+  }, currentUser.role)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.68rem',
+      color: '#94a3b8'
+    }
+  }, currentUser.specialty || currentUser.username)), /*#__PURE__*/React.createElement("button", {
+    onClick: handleLogout,
+    title: "Sign Out of Session",
+    style: {
+      marginLeft: 4,
+      padding: '4px 8px',
+      borderRadius: 6,
+      background: 'rgba(244, 63, 94, 0.15)',
+      border: '1px solid rgba(244, 63, 94, 0.3)',
+      color: '#fb7185',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 4,
+      fontSize: '0.72rem',
+      fontWeight: 600
+    }
+  }, /*#__PURE__*/React.createElement(Icons.logOut, {
+    size: 13
+  }), /*#__PURE__*/React.createElement("span", null, "Exit"))))), /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 1440,
       margin: '0 auto',
@@ -1215,24 +2002,24 @@ function App() {
       gap: 6,
       overflowX: 'auto'
     }
-  }, [{
-    id: 'patients',
-    label: '🩺 Patient Vitals (Doctors)',
-    icon: Icons.activity,
-    count: patientStats.total_patients || 768
-  }, {
-    id: 'crypto',
-    label: '🔬 Crypto Inspector',
-    icon: Icons.lock
+  }, (currentUser.role === 'DOCTOR' ? [{
+    id: 'doctor_telemetry',
+    label: '🩺 Quantum Telemetry & Decryption',
+    icon: Icons.activity
   }, {
     id: 'biochip',
     label: '🧬 Biochip Digital Twin',
     icon: Icons.droplet
   }, {
-    id: 'attacks',
-    label: '🎯 Attack Sandbox',
-    icon: Icons.target
+    id: 'crypto',
+    label: '🔬 Crypto Inspector',
+    icon: Icons.lock
   }, {
+    id: 'audit',
+    label: '📜 Access Audit Log',
+    icon: Icons.fileText,
+    count: auditData.events ? auditData.events.length : 0
+  }] : [{
     id: 'devices',
     label: 'Registered Devices',
     icon: Icons.device,
@@ -1248,6 +2035,27 @@ function App() {
     icon: Icons.fileText,
     count: auditData.events ? auditData.events.length : 0
   }, {
+    id: 'admin_clearances',
+    label: '🛡️ Doctor Clearances',
+    icon: Icons.shield
+  }, {
+    id: 'patients',
+    label: '🩺 Cohort Vitals (All Assays)',
+    icon: Icons.activity,
+    count: patientStats.total_patients || 768
+  }, {
+    id: 'biochip',
+    label: '🧬 Biochip Digital Twin',
+    icon: Icons.droplet
+  }, {
+    id: 'attacks',
+    label: '🎯 Attack Sandbox',
+    icon: Icons.target
+  }, {
+    id: 'crypto',
+    label: '🔬 Crypto Inspector',
+    icon: Icons.lock
+  }, {
     id: 'benchmarks',
     label: 'Benchmarks & Papers',
     icon: Icons.chart
@@ -1255,7 +2063,7 @@ function App() {
     id: 'security',
     label: 'Security & CRL',
     icon: Icons.shield
-  }].map(tab => {
+  }]).map(tab => {
     const IconCmp = tab.icon;
     const active = activeTab === tab.id;
     return /*#__PURE__*/React.createElement("button", {
@@ -1296,7 +2104,820 @@ function App() {
       flex: 1,
       width: '100%'
     }
-  }, activeTab === 'patients' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, activeTab === 'doctor_telemetry' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 16,
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: '1.3rem',
+      fontWeight: 800,
+      color: '#f8fafc'
+    }
+  }, "\uD83E\uDE7A Clinical Biochip Telemetry & In-Transit Decryption Terminal"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '0.72rem',
+      padding: '2px 8px',
+      borderRadius: 9999,
+      background: 'rgba(16, 185, 129, 0.15)',
+      color: '#34d399',
+      border: '1px solid rgba(16, 185, 129, 0.3)',
+      fontWeight: 600
+    }
+  }, "Doctor Portal (RBAC Protected)")), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '0.84rem',
+      color: '#94a3b8',
+      marginTop: 4
+    }
+  }, "Post-quantum authenticated telemetry access for ", currentUser.name, " (", currentUser.specialty, "). Data is encrypted in-transit via ML-KEM-768 & AES-256-GCM.")), doctorDecryptedData && doctorDecryptedData.patients && /*#__PURE__*/React.createElement("button", {
+    onClick: () => exportToCsv(`biochip_${selectedBiochipId}_telemetry`, doctorDecryptedData.patients),
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      padding: '8px 16px',
+      borderRadius: 8,
+      background: 'rgba(30, 41, 59, 0.8)',
+      color: '#cbd5e1',
+      border: '1px solid rgba(148, 163, 184, 0.2)',
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      cursor: 'pointer'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.download, {
+    size: 14
+  }), "Export Decrypted Telemetry (", doctorDecryptedData.patients.length, " Records)")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 24
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.85rem',
+      fontWeight: 700,
+      color: '#cbd5e1',
+      marginBottom: 10,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement(Icons.device, {
+    size: 16,
+    style: {
+      color: '#06b6d4'
+    }
+  }), /*#__PURE__*/React.createElement("span", null, "Select Biochip Node for Quantum Handshake:")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+      gap: 14
+    }
+  }, doctorBiochips.map(bc => {
+    const isSelected = selectedBiochipId === bc.biochip_id;
+    return /*#__PURE__*/React.createElement("div", {
+      key: bc.biochip_id,
+      onClick: () => {
+        setSelectedBiochipId(bc.biochip_id);
+        setDoctorEncryptedPackage(null);
+        setDoctorDecryptedData(null);
+        setDoctorAccessError(null);
+      },
+      className: "glass-card",
+      style: {
+        padding: 16,
+        cursor: 'pointer',
+        borderRadius: 12,
+        background: isSelected ? 'rgba(6, 182, 212, 0.08)' : 'rgba(15, 23, 42, 0.6)',
+        border: isSelected ? '2px solid #06b6d4' : '1px solid rgba(148, 163, 184, 0.15)',
+        transition: 'all 0.15s ease'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "font-mono",
+      style: {
+        fontSize: '0.85rem',
+        fontWeight: 800,
+        color: isSelected ? '#38bdf8' : '#f8fafc'
+      }
+    }, bc.biochip_id), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: '0.68rem',
+        fontWeight: 700,
+        padding: '2px 8px',
+        borderRadius: 9999,
+        background: bc.authorized ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)',
+        color: bc.authorized ? '#34d399' : '#fb7185',
+        border: `1px solid ${bc.authorized ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.3)'}`
+      }
+    }, bc.authorized ? '● Clearance Approved' : '🔒 Clearance Restricted')), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: '0.82rem',
+        fontWeight: 600,
+        color: '#e2e8f0',
+        marginBottom: 4
+      }
+    }, bc.name), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: '0.74rem',
+        color: '#94a3b8',
+        marginBottom: 6
+      }
+    }, "\uD83D\uDCCD ", bc.location), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        fontSize: '0.72rem',
+        color: '#64748b',
+        paddingTop: 6,
+        borderTop: '1px solid rgba(148, 163, 184, 0.1)'
+      }
+    }, /*#__PURE__*/React.createElement("span", null, bc.assay_type), /*#__PURE__*/React.createElement("strong", {
+      style: {
+        color: '#94a3b8'
+      }
+    }, bc.patient_count, " Assays")));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "glass-card",
+    style: {
+      padding: 18,
+      borderRadius: 12,
+      marginBottom: 24,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 14,
+      background: 'rgba(30, 41, 59, 0.5)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 8,
+      background: 'rgba(6, 182, 212, 0.15)',
+      borderRadius: 8,
+      color: '#06b6d4'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.key, {
+    size: 20
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.8rem',
+      color: '#94a3b8'
+    }
+  }, "Active Target Biochip"), /*#__PURE__*/React.createElement("div", {
+    className: "font-mono",
+    style: {
+      fontSize: '1rem',
+      fontWeight: 800,
+      color: '#38bdf8'
+    }
+  }, selectedBiochipId))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => handleDoctorExchange(selectedBiochipId),
+    disabled: doctorKeyExchangeLoading,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      padding: '10px 18px',
+      borderRadius: 8,
+      background: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
+      color: '#090d16',
+      fontWeight: 800,
+      border: 'none',
+      cursor: doctorKeyExchangeLoading ? 'not-allowed' : 'pointer',
+      fontSize: '0.85rem',
+      transition: 'all 0.15s ease'
+    }
+  }, doctorKeyExchangeLoading ? /*#__PURE__*/React.createElement(Icons.refresh, {
+    size: 15,
+    className: "live-pulse"
+  }) : /*#__PURE__*/React.createElement(Icons.play, {
+    size: 15
+  }), /*#__PURE__*/React.createElement("span", null, doctorKeyExchangeLoading ? 'Executing Key Exchange (ML-KEM-768)...' : '📡 Request In-Transit Quantum-Encrypted Telemetry')), /*#__PURE__*/React.createElement("button", {
+    onClick: () => handleDoctorExchange('DMFB-RESEARCH-03'),
+    disabled: doctorKeyExchangeLoading,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      padding: '10px 14px',
+      borderRadius: 8,
+      background: 'rgba(244, 63, 94, 0.12)',
+      color: '#fb7185',
+      border: '1px solid rgba(244, 63, 94, 0.3)',
+      cursor: doctorKeyExchangeLoading ? 'not-allowed' : 'pointer',
+      fontSize: '0.82rem',
+      fontWeight: 600
+    },
+    title: "Simulate accessing an unauthorized node to verify 403 Forbidden enforcement and tamper-evident audit logging"
+  }, /*#__PURE__*/React.createElement(Icons.alert, {
+    size: 14
+  }), /*#__PURE__*/React.createElement("span", null, "\uD83E\uDDEA Test Unauthorized Biochip (DMFB-RESEARCH-03)")))), doctorAccessError && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(244, 63, 94, 0.1)',
+      border: '1px solid rgba(244, 63, 94, 0.35)',
+      borderRadius: 12,
+      padding: 18,
+      marginBottom: 24
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 6,
+      background: 'rgba(244, 63, 94, 0.2)',
+      borderRadius: 8,
+      color: '#fb7185'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.alert, {
+    size: 20
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.95rem',
+      fontWeight: 800,
+      color: '#fb7185',
+      marginBottom: 4
+    }
+  }, "\u26D4 Cryptographic Authorization Denied (HTTP 403 Forbidden)"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.84rem',
+      color: '#fecdd3',
+      marginBottom: 8
+    }
+  }, doctorAccessError), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.78rem',
+      color: '#94a3b8',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "Tamper-Evident Security Log: An unauthorized access attempt has been permanently logged to the SHA-256 hash-chained ledger."), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setActiveTab('audit'),
+    style: {
+      padding: '3px 10px',
+      borderRadius: 4,
+      background: 'rgba(244, 63, 94, 0.2)',
+      color: '#fb7185',
+      border: '1px solid rgba(244, 63, 94, 0.4)',
+      fontSize: '0.72rem',
+      fontWeight: 700,
+      cursor: 'pointer'
+    }
+  }, "Inspect Audit Log"))))), doctorEncryptedPackage && /*#__PURE__*/React.createElement("div", {
+    className: "glass-card",
+    style: {
+      padding: 22,
+      borderRadius: 14,
+      marginBottom: 24,
+      border: '1px solid rgba(6, 182, 212, 0.35)',
+      background: 'rgba(15, 23, 42, 0.85)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 12,
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 8,
+      background: 'rgba(6, 182, 212, 0.15)',
+      borderRadius: 8,
+      color: '#38bdf8'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.lock, {
+    size: 20
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: '1rem',
+      fontWeight: 800,
+      color: '#f8fafc',
+      margin: 0
+    }
+  }, "\uD83D\uDCE6 In-Transit Encrypted Telemetry Package (Session ", doctorEncryptedPackage.session_id.slice(0, 8), "...)"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '0.78rem',
+      color: '#94a3b8',
+      margin: '2px 0 0 0'
+    }
+  }, "Encapsulated under NIST FIPS 203 ML-KEM-768 & signed with FIPS 204 ML-DSA-65. Telemetry is in ciphertext form."))), /*#__PURE__*/React.createElement("button", {
+    onClick: handleDoctorDecrypt,
+    disabled: doctorDecryptLoading,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      padding: '10px 18px',
+      borderRadius: 8,
+      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      color: '#ffffff',
+      fontWeight: 800,
+      border: 'none',
+      cursor: doctorDecryptLoading ? 'not-allowed' : 'pointer',
+      fontSize: '0.85rem',
+      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)'
+    }
+  }, doctorDecryptLoading ? /*#__PURE__*/React.createElement(Icons.refresh, {
+    size: 15,
+    className: "live-pulse"
+  }) : /*#__PURE__*/React.createElement(Icons.unlock, {
+    size: 15
+  }), /*#__PURE__*/React.createElement("span", null, doctorDecryptLoading ? 'Decapsulating & Decrypting...' : '🔓 Decapsulate & Decrypt with Doctor\'s Secret Key'))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+      gap: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(30, 41, 59, 0.6)',
+      padding: 14,
+      borderRadius: 10,
+      border: '1px solid rgba(148, 163, 184, 0.15)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.74rem',
+      color: '#94a3b8',
+      textTransform: 'uppercase',
+      fontWeight: 700,
+      marginBottom: 4
+    }
+  }, "1. ML-KEM-768 Ciphertext (c_kem)"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 700,
+      color: '#38bdf8',
+      marginBottom: 4
+    }
+  }, doctorEncryptedPackage.kem_ciphertext_len, " Bytes (FIPS 203)"), /*#__PURE__*/React.createElement("div", {
+    className: "font-mono",
+    style: {
+      fontSize: '0.7rem',
+      color: '#64748b',
+      wordBreak: 'break-all',
+      background: 'rgba(15, 23, 42, 0.7)',
+      padding: 8,
+      borderRadius: 6
+    }
+  }, doctorEncryptedPackage.kem_ciphertext_b64.slice(0, 48), "...")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(30, 41, 59, 0.6)',
+      padding: 14,
+      borderRadius: 10,
+      border: '1px solid rgba(148, 163, 184, 0.15)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.74rem',
+      color: '#94a3b8',
+      textTransform: 'uppercase',
+      fontWeight: 700,
+      marginBottom: 4
+    }
+  }, "2. AES-256-GCM Ciphertext (c_payload)"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 700,
+      color: '#c084fc',
+      marginBottom: 4
+    }
+  }, doctorEncryptedPackage.aead_ciphertext_len, " Bytes + 16B GHASH Tag"), /*#__PURE__*/React.createElement("div", {
+    className: "font-mono",
+    style: {
+      fontSize: '0.7rem',
+      color: '#64748b',
+      wordBreak: 'break-all',
+      background: 'rgba(15, 23, 42, 0.7)',
+      padding: 8,
+      borderRadius: 6
+    }
+  }, doctorEncryptedPackage.aead_ciphertext_b64.slice(0, 48), "...")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(30, 41, 59, 0.6)',
+      padding: 14,
+      borderRadius: 10,
+      border: '1px solid rgba(148, 163, 184, 0.15)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.74rem',
+      color: '#94a3b8',
+      textTransform: 'uppercase',
+      fontWeight: 700,
+      marginBottom: 4
+    }
+  }, "3. Deterministic Nonce (N)"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 700,
+      color: '#fbbf24',
+      marginBottom: 4
+    }
+  }, "12 Bytes (96-bit IV)"), /*#__PURE__*/React.createElement("div", {
+    className: "font-mono",
+    style: {
+      fontSize: '0.7rem',
+      color: '#64748b',
+      wordBreak: 'break-all',
+      background: 'rgba(15, 23, 42, 0.7)',
+      padding: 8,
+      borderRadius: 6
+    }
+  }, doctorEncryptedPackage.nonce_b64)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(30, 41, 59, 0.6)',
+      padding: 14,
+      borderRadius: 10,
+      border: '1px solid rgba(148, 163, 184, 0.15)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.74rem',
+      color: '#94a3b8',
+      textTransform: 'uppercase',
+      fontWeight: 700,
+      marginBottom: 4
+    }
+  }, "4. Server ML-DSA-65 Signature"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 700,
+      color: '#34d399',
+      marginBottom: 4
+    }
+  }, "3,309 Bytes (FIPS 204)"), /*#__PURE__*/React.createElement("div", {
+    className: "font-mono",
+    style: {
+      fontSize: '0.7rem',
+      color: '#64748b',
+      wordBreak: 'break-all',
+      background: 'rgba(15, 23, 42, 0.7)',
+      padding: 8,
+      borderRadius: 6
+    }
+  }, doctorEncryptedPackage.server_signature_b64.slice(0, 48), "...")))), doctorDecryptedData && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(16, 185, 129, 0.1)',
+      border: '1px solid rgba(16, 185, 129, 0.35)',
+      borderRadius: 12,
+      padding: 18,
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 6,
+      background: 'rgba(16, 185, 129, 0.2)',
+      borderRadius: 8,
+      color: '#34d399'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.check, {
+    size: 20
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.95rem',
+      fontWeight: 800,
+      color: '#34d399'
+    }
+  }, "\u2705 Telemetry Successfully Decrypted & Authenticated (", doctorDecryptedData.record_count, " Records)"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.78rem',
+      color: '#94a3b8',
+      marginTop: 2
+    }
+  }, "Shared Secret: ", /*#__PURE__*/React.createElement("span", {
+    className: "font-mono",
+    style: {
+      color: '#38bdf8'
+    }
+  }, doctorDecryptedData.shared_secret_preview), " \u2022 Derived Session Key: ", /*#__PURE__*/React.createElement("span", {
+    className: "font-mono",
+    style: {
+      color: '#a78bfa'
+    }
+  }, doctorDecryptedData.session_key_preview), " \u2022 AEAD Tag: ", /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: '#34d399'
+    }
+  }, "VERIFIED AUTHENTIC")))), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '0.72rem',
+      padding: '3px 10px',
+      borderRadius: 9999,
+      background: 'rgba(16, 185, 129, 0.2)',
+      color: '#34d399',
+      fontWeight: 700
+    }
+  }, "End-to-End Quantum-Safe"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+      gap: 14,
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "glass-card",
+    style: {
+      padding: 16,
+      borderLeft: '4px solid #06b6d4'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: '#94a3b8',
+      fontSize: '0.75rem',
+      fontWeight: 600,
+      textTransform: 'uppercase'
+    }
+  }, "Decrypted Assays"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '1.8rem',
+      fontWeight: 800,
+      color: '#38bdf8',
+      marginTop: 4
+    }
+  }, doctorCohortStats.total, " Patients"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: '#64748b',
+      fontSize: '0.72rem',
+      marginTop: 2
+    }
+  }, "Node: ", selectedBiochipId)), /*#__PURE__*/React.createElement("div", {
+    className: "glass-card",
+    style: {
+      padding: 16,
+      borderLeft: '4px solid #10b981'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: '#94a3b8',
+      fontSize: '0.75rem',
+      fontWeight: 600,
+      textTransform: 'uppercase'
+    }
+  }, "Mean Blood Glucose"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '1.8rem',
+      fontWeight: 800,
+      color: '#34d399',
+      marginTop: 4
+    }
+  }, doctorCohortStats.meanGlucose, " ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '0.9rem',
+      fontWeight: 500
+    }
+  }, "mg/dL")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: '#64748b',
+      fontSize: '0.72rem',
+      marginTop: 2
+    }
+  }, "Enzymatic Biosensor Readout")), /*#__PURE__*/React.createElement("div", {
+    className: "glass-card",
+    style: {
+      padding: 16,
+      borderLeft: '4px solid #f43f5e'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: '#94a3b8',
+      fontSize: '0.75rem',
+      fontWeight: 600,
+      textTransform: 'uppercase'
+    }
+  }, "Diabetic Positive"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '1.8rem',
+      fontWeight: 800,
+      color: '#fb7185',
+      marginTop: 4
+    }
+  }, doctorCohortStats.diabeticCount, " (", doctorCohortStats.diabeticPct, "%)"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: '#64748b',
+      fontSize: '0.72rem',
+      marginTop: 2
+    }
+  }, "Clinical Diagnosis = 1")), /*#__PURE__*/React.createElement("div", {
+    className: "glass-card",
+    style: {
+      padding: 16,
+      borderLeft: '4px solid #f59e0b'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: '#94a3b8',
+      fontSize: '0.75rem',
+      fontWeight: 600,
+      textTransform: 'uppercase'
+    }
+  }, "High Clinical Risk"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '1.8rem',
+      fontWeight: 800,
+      color: '#fbbf24',
+      marginTop: 4
+    }
+  }, doctorCohortStats.highRiskCount, " Patients"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: '#64748b',
+      fontSize: '0.72rem',
+      marginTop: 2
+    }
+  }, "Glucose > 180 or Impaired"))), /*#__PURE__*/React.createElement("div", {
+    className: "glass-card",
+    style: {
+      padding: 14,
+      borderRadius: 10,
+      marginBottom: 16,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      flex: 1,
+      minWidth: 240
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'relative',
+      width: '100%',
+      maxWidth: 300
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    value: doctorPatientSearch,
+    onChange: e => setDoctorPatientSearch(e.target.value),
+    placeholder: "Search patient ID or age...",
+    style: {
+      width: '100%',
+      padding: '6px 10px 6px 30px',
+      background: 'rgba(30, 41, 59, 0.8)',
+      border: '1px solid rgba(148, 163, 184, 0.2)',
+      borderRadius: 6,
+      color: '#f8fafc',
+      fontSize: '0.8rem',
+      outline: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      left: 8,
+      top: '50%',
+      transform: 'translateY(-50%)',
+      color: '#64748b'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.search, {
+    size: 14
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      fontSize: '0.78rem',
+      color: '#94a3b8'
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "Risk:"), /*#__PURE__*/React.createElement("select", {
+    value: doctorRiskFilter,
+    onChange: e => setDoctorRiskFilter(e.target.value),
+    style: {
+      background: 'rgba(30, 41, 59, 0.8)',
+      color: '#f8fafc',
+      border: '1px solid rgba(148, 163, 184, 0.2)',
+      borderRadius: 6,
+      padding: '4px 8px',
+      fontSize: '0.78rem',
+      outline: 'none'
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "ALL"
+  }, "All Risk Levels"), /*#__PURE__*/React.createElement("option", {
+    value: "NORMAL"
+  }, "Normal"), /*#__PURE__*/React.createElement("option", {
+    value: "PRE_DIABETIC"
+  }, "Pre-Diabetic"), /*#__PURE__*/React.createElement("option", {
+    value: "HIGH"
+  }, "High Risk"), /*#__PURE__*/React.createElement("option", {
+    value: "CRITICAL_HIGH"
+  }, "Critical High")))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.78rem',
+      color: '#94a3b8'
+    }
+  }, "Showing ", /*#__PURE__*/React.createElement("strong", null, filteredDoctorPatients.length), " of ", doctorDecryptedData.patients.length, " records")), /*#__PURE__*/React.createElement("div", {
+    className: "glass-card",
+    style: {
+      borderRadius: 12,
+      overflow: 'hidden',
+      border: '1px solid rgba(148, 163, 184, 0.15)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      overflowX: 'auto'
+    }
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "data-table"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Patient ID"), /*#__PURE__*/React.createElement("th", null, "Age"), /*#__PURE__*/React.createElement("th", null, "Glucose (mg/dL)"), /*#__PURE__*/React.createElement("th", null, "Blood Pressure"), /*#__PURE__*/React.createElement("th", null, "Insulin (\u03BCU/mL)"), /*#__PURE__*/React.createElement("th", null, "BMI"), /*#__PURE__*/React.createElement("th", null, "Outcome"), /*#__PURE__*/React.createElement("th", null, "Clinical Risk Status"))), /*#__PURE__*/React.createElement("tbody", null, filteredDoctorPatients.map(pt => /*#__PURE__*/React.createElement("tr", {
+    key: pt.id || pt.patient_id
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "font-mono",
+    style: {
+      fontWeight: 700,
+      color: '#38bdf8'
+    }
+  }, "#", pt.id || pt.patient_id), /*#__PURE__*/React.createElement("td", null, pt.age, " yrs"), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: pt.glucose >= 200 ? '#fb7185' : pt.glucose >= 140 ? '#fbbf24' : '#34d399'
+    }
+  }, pt.glucose), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '0.7rem',
+      color: '#64748b',
+      marginLeft: 4
+    }
+  }, "mg/dL")), /*#__PURE__*/React.createElement("td", null, pt.blood_pressure, " mm Hg"), /*#__PURE__*/React.createElement("td", null, pt.insulin || '—'), /*#__PURE__*/React.createElement("td", null, pt.bmi), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement(Badge, {
+    status: pt.outcome === 1 ? 'DIABETIC' : 'NORMAL',
+    label: pt.outcome === 1 ? 'Diabetic' : 'Normal'
+  })), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement(Badge, {
+    status: pt.clinical_status || pt.clinical_risk,
+    label: pt.risk_label || pt.clinical_status || pt.clinical_risk
+  })))), !filteredDoctorPatients.length && /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
+    colSpan: 8,
+    style: {
+      textAlign: 'center',
+      padding: 28,
+      color: '#64748b'
+    }
+  }, "No decrypted patient records match the filter criteria.")))))))), activeTab === 'patients' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -4832,7 +6453,174 @@ AAD = device_id || session_id || message_id || counter`), /*#__PURE__*/React.cre
       padding: 32,
       color: '#64748b'
     }
-  }, "Run ", /*#__PURE__*/React.createElement("code", null, "pytest tests/"), " to populate security test cases.")))))))), provisionModalOpen && /*#__PURE__*/React.createElement("div", {
+  }, "Run ", /*#__PURE__*/React.createElement("code", null, "pytest tests/"), " to populate security test cases."))))))), activeTab === 'admin_clearances' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 16,
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: '1.3rem',
+      fontWeight: 800,
+      color: '#f8fafc'
+    }
+  }, "\uD83D\uDEE1\uFE0F Doctor Biochip Access Control & Cryptographic Clearance Matrix"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '0.72rem',
+      padding: '2px 8px',
+      borderRadius: 9999,
+      background: 'rgba(6, 182, 212, 0.15)',
+      color: '#38bdf8',
+      border: '1px solid rgba(6, 182, 212, 0.3)',
+      fontWeight: 600
+    }
+  }, "KMS Admin Governance")), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '0.84rem',
+      color: '#94a3b8',
+      marginTop: 4
+    }
+  }, "Configure Role-Based Access Control (RBAC) clearances for medical personnel. Granting or revoking clearance immediately alters post-quantum key exchange authorization on the KMS server.")), /*#__PURE__*/React.createElement("button", {
+    onClick: fetchAdminAuthorizations,
+    disabled: adminAuthorizationsLoading,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      padding: '8px 16px',
+      borderRadius: 8,
+      background: 'rgba(30, 41, 59, 0.8)',
+      color: '#f8fafc',
+      border: '1px solid rgba(148, 163, 184, 0.2)',
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      cursor: adminAuthorizationsLoading ? 'not-allowed' : 'pointer'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.refresh, {
+    size: 14,
+    className: adminAuthorizationsLoading ? 'live-pulse' : ''
+  }), /*#__PURE__*/React.createElement("span", null, adminAuthorizationsLoading ? 'Refreshing...' : 'Refresh Matrix'))), /*#__PURE__*/React.createElement("div", {
+    className: "glass-card",
+    style: {
+      borderRadius: 12,
+      overflow: 'hidden',
+      border: '1px solid rgba(148, 163, 184, 0.15)',
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      overflowX: 'auto'
+    }
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "data-table"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+    style: {
+      minWidth: 220
+    }
+  }, "Clinician / Doctor"), /*#__PURE__*/React.createElement("th", {
+    style: {
+      minWidth: 200
+    }
+  }, "Department & Specialty"), (adminAuthorizations?.all_biochips || ['DMFB-ALPHA', 'DMFB-ICU-01', 'DMFB-BETA', 'DMFB-CLINIC-02', 'DMFB-RESEARCH-03']).map(chipId => /*#__PURE__*/React.createElement("th", {
+    key: chipId,
+    className: "font-mono",
+    style: {
+      textAlign: 'center',
+      minWidth: 150
+    }
+  }, chipId)))), /*#__PURE__*/React.createElement("tbody", null, (adminAuthorizations?.doctors || []).map(doc => /*#__PURE__*/React.createElement("tr", {
+    key: doc.username
+  }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '1.2rem'
+    }
+  }, "\uD83E\uDE7A"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      color: '#f8fafc'
+    }
+  }, doc.name), /*#__PURE__*/React.createElement("div", {
+    className: "font-mono",
+    style: {
+      fontSize: '0.72rem',
+      color: '#64748b'
+    }
+  }, "@", doc.username)))), /*#__PURE__*/React.createElement("td", {
+    style: {
+      color: '#cbd5e1',
+      fontSize: '0.82rem'
+    }
+  }, doc.specialty), (adminAuthorizations?.all_biochips || []).map(chipId => {
+    const isAuthorized = doc.authorized_biochips?.includes(chipId);
+    return /*#__PURE__*/React.createElement("td", {
+      key: chipId,
+      style: {
+        textAlign: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => handleToggleAuthorization(doc.username, chipId),
+      style: {
+        padding: '6px 14px',
+        borderRadius: 6,
+        border: `1px solid ${isAuthorized ? 'rgba(16, 185, 129, 0.4)' : 'rgba(244, 63, 94, 0.3)'}`,
+        background: isAuthorized ? 'rgba(16, 185, 129, 0.15)' : 'rgba(30, 41, 59, 0.6)',
+        color: isAuthorized ? '#34d399' : '#94a3b8',
+        fontSize: '0.74rem',
+        fontWeight: 700,
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
+        minWidth: 110
+      },
+      title: `Click to ${isAuthorized ? 'REVOKE' : 'GRANT'} access to ${chipId}`
+    }, isAuthorized ? '✓ Authorized' : '🔒 Restricted'));
+  }))))))), /*#__PURE__*/React.createElement("div", {
+    className: "glass-card",
+    style: {
+      padding: 18,
+      borderRadius: 10,
+      background: 'rgba(6, 182, 212, 0.05)',
+      border: '1px solid rgba(6, 182, 212, 0.2)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement(Icons.shield, {
+    size: 20,
+    style: {
+      color: '#06b6d4'
+    }
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.85rem',
+      fontWeight: 700,
+      color: '#f8fafc'
+    }
+  }, "Real-Time Cryptographic Enforcement & SHA-256 Audit Trail"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.78rem',
+      color: '#94a3b8',
+      marginTop: 2
+    }
+  }, "Every clearance grant and revoke instantly updates the server authorization table and generates an immutable block in the SHA-256 tamper-evident ledger. When unauthorized doctors request key encapsulation, the KMS server rejects the handshake with HTTP 403 Forbidden.")))))), provisionModalOpen && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'fixed',
       inset: 0,

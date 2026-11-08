@@ -8,10 +8,12 @@ or: bash run.sh dashboard-old
 """
 from __future__ import annotations
 
+import base64
 import csv
 import json
 import os
 import sys
+import uuid
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, List, Optional
@@ -29,6 +31,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from app.audit.audit import get_audit_logger
 from app.config import (
     CTX_REG,
     CTX_REV,
@@ -42,6 +45,10 @@ from app.config import (
     SIG_ALG,
     TS_SKEW_S,
 )
+from app.crypto.aead import decrypt as aead_decrypt, encrypt as aead_encrypt
+from app.crypto.kdf import derive_session_key
+from app.crypto.kem import encapsulate, get_kem
+from app.crypto.sig import sign as sig_sign
 from app.database.db import Database
 from app.simulation.attack_lab import AttackLab
 from app.simulation.dmfb_simulator import DMFBBiochip, get_biochip
@@ -77,6 +84,428 @@ def _read_csv(path: Path) -> list[dict[str, Any]]:
     with open(path, mode="r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         return list(reader)
+
+
+# ─── Role-Based Access Control (RBAC) & Users Database ──────────────────────
+
+USERS: dict[str, dict[str, Any]] = {
+    "admin": {
+        "username": "admin",
+        "password": "admin123",
+        "name": "KMS Security Administrator",
+        "role": "ADMIN",
+        "specialty": "Post-Quantum Cryptographic Key Operations",
+        "avatar": "🛡️",
+        "authorized_biochips": ["DMFB-ALPHA", "DMFB-ICU-01", "DMFB-BETA", "DMFB-CLINIC-02", "DMFB-RESEARCH-03"],
+    },
+    "dr.sharma": {
+        "username": "dr.sharma",
+        "password": "doc123",
+        "name": "Dr. Ananya Sharma, MD",
+        "role": "DOCTOR",
+        "specialty": "Chief Endocrinologist & ICU Critical Care",
+        "avatar": "🩺",
+        "authorized_biochips": ["DMFB-ALPHA", "DMFB-ICU-01"],
+    },
+    "dr.alvarez": {
+        "username": "dr.alvarez",
+        "password": "doc123",
+        "name": "Dr. Carlos Alvarez, MD",
+        "role": "DOCTOR",
+        "specialty": "Metabolic Care & Routine Outpatient Clinic",
+        "avatar": "🩺",
+        "authorized_biochips": ["DMFB-BETA", "DMFB-CLINIC-02"],
+    },
+}
+
+BIOCHIPS_CATALOG = [
+    {
+        "biochip_id": "DMFB-ALPHA",
+        "name": "DMFB Node Alpha (Critical Glucose)",
+        "location": "ICU Acute Ward - Bed 04",
+        "patient_range": (0, 25),
+        "assay_type": "Enzymatic Glucose Biosensor",
+    },
+    {
+        "biochip_id": "DMFB-ICU-01",
+        "name": "DMFB ICU Station 01",
+        "location": "Intensive Care Unit Station 01",
+        "patient_range": (25, 50),
+        "assay_type": "Electrolyte & Glucose Assay",
+    },
+    {
+        "biochip_id": "DMFB-BETA",
+        "name": "DMFB Node Beta (Metabolic Clinic)",
+        "location": "Outpatient Clinic Room 12",
+        "patient_range": (50, 75),
+        "assay_type": "Continuous Glycemic Monitoring",
+    },
+    {
+        "biochip_id": "DMFB-CLINIC-02",
+        "name": "DMFB Screening Station 02",
+        "location": "Preventative Care Center",
+        "patient_range": (75, 100),
+        "assay_type": "Standard Glucose Tolerance Assay",
+    },
+    {
+        "biochip_id": "DMFB-RESEARCH-03",
+        "name": "DMFB Nanofabrication Lab",
+        "location": "Cleanroom Lab 3",
+        "patient_range": (100, 125),
+        "assay_type": "Experimental High-Throughput Droplet Routing",
+    },
+]
+
+
+def _get_server_sig_keys() -> tuple[bytes, bytes]:
+    key_path = Path(SERVER_KEY_PATH)
+    if key_path.exists():
+        data = json.loads(key_path.read_text(encoding="utf-8"))
+        return bytes.fromhex(data["signing_key"]), bytes.fromhex(data["verify_key"])
+    import oqs
+    sig = oqs.Signature(SIG_ALG)
+    vk = sig.generate_keypair()
+    sk = sig.export_secret_key()
+    key_path.write_text(json.dumps({"signing_key": sk.hex(), "verify_key": vk.hex()}))
+    return sk, vk
+
+
+def _get_biochip_patients(biochip_id: str) -> list[dict[str, Any]]:
+    all_patients = _load_patients()
+    for bc in BIOCHIPS_CATALOG:
+        if bc["biochip_id"] == biochip_id:
+            start, end = bc["patient_range"]
+            return all_patients[start:end]
+    return all_patients[:25]
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class DoctorExchangeRequest(BaseModel):
+    doctor_id: str
+    biochip_id: str
+    doctor_kem_pk_b64: Optional[str] = None
+
+
+class DoctorDecryptRequest(BaseModel):
+    doctor_id: str
+    biochip_id: str
+    session_id: str
+    message_id: Optional[str] = "msg-001"
+    nonce_c_b64: str
+    doctor_kem_sk_b64: str
+    kem_ciphertext_b64: str
+    aead_ciphertext_b64: str
+    nonce_b64: str
+
+
+class TogglePermissionRequest(BaseModel):
+    doctor_id: str
+    biochip_id: str
+
+
+# ─── Auth Endpoints ──────────────────────────────────────────────────────────
+
+@app.post("/api/auth/login")
+def auth_login(req: LoginRequest):
+    """Authenticate user (Admin or Doctor) and issue role-scoped session."""
+    audit = get_audit_logger()
+    user = USERS.get(req.username.strip().lower())
+    if not user or user["password"] != req.password.strip():
+        audit.log(
+            actor=req.username,
+            event_type="AUTH_LOGIN_FAILED",
+            outcome="REJECTED",
+            details="Invalid username or password credentials",
+        )
+        raise HTTPException(status_code=401, detail="Invalid username or password credentials")
+
+    token = f"token-{user['username']}-{uuid.uuid4().hex[:12]}"
+    audit.log(
+        actor=user["username"],
+        event_type="AUTH_LOGIN_SUCCESS",
+        outcome="ACCEPTED",
+        details=f"User authenticated as role={user['role']} (name={user['name']})",
+    )
+
+    safe_user = dict(user)
+    safe_user.pop("password", None)
+    return {
+        "status": "AUTHENTICATED",
+        "token": token,
+        "user": safe_user,
+    }
+
+
+@app.get("/api/auth/users")
+def get_auth_users():
+    """List available demo credentials for easy reviewer evaluation."""
+    demo_users = []
+    for u in USERS.values():
+        demo_users.append({
+            "username": u["username"],
+            "password": u["password"],
+            "name": u["name"],
+            "role": u["role"],
+            "specialty": u["specialty"],
+            "avatar": u.get("avatar", "👤"),
+            "authorized_biochips": u.get("authorized_biochips", []),
+        })
+    return demo_users
+
+
+# ─── Doctor Biochip Telemetry & Quantum Key Exchange ─────────────────────────
+
+@app.get("/api/doctor/biochips")
+def get_doctor_biochips(doctor_id: str = Query("dr.sharma")):
+    """Get biochip catalog annotated with authorization status for the requesting doctor."""
+    user = USERS.get(doctor_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    is_admin = user.get("role") == "ADMIN"
+    authorized_list = user.get("authorized_biochips", [])
+
+    results = []
+    for bc in BIOCHIPS_CATALOG:
+        is_auth = is_admin or (bc["biochip_id"] in authorized_list)
+        results.append({
+            "biochip_id": bc["biochip_id"],
+            "name": bc["name"],
+            "location": bc["location"],
+            "assay_type": bc["assay_type"],
+            "authorized": is_auth,
+            "patient_count": bc["patient_range"][1] - bc["patient_range"][0],
+        })
+    return {
+        "doctor_id": doctor_id,
+        "doctor_name": user["name"],
+        "specialty": user["specialty"],
+        "biochips": results,
+    }
+
+
+@app.post("/api/doctor/exchange-keys")
+def doctor_exchange_keys(req: DoctorExchangeRequest):
+    """
+    KMS performs Post-Quantum Key Exchange with Doctor for authorized biochip telemetry.
+    1. Validates doctor authorization for requested biochip.
+    2. Encapsulates ML-KEM-768 shared secret to doctor's public key.
+    3. Derives symmetric session key via HKDF-SHA256.
+    4. Encrypts patient telemetry under AES-256-GCM.
+    5. Signs transmission using Server ML-DSA-65 private key.
+    """
+    audit = get_audit_logger()
+    user = USERS.get(req.doctor_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Doctor account not found")
+
+    authorized_chips = user.get("authorized_biochips", [])
+    if req.biochip_id not in authorized_chips and user.get("role") != "ADMIN":
+        audit.log(
+            actor=req.doctor_id,
+            event_type="UNAUTHORIZED_BIOCHIP_ACCESS_ATTEMPT",
+            outcome="REJECTED",
+            device_id=req.biochip_id,
+            details=f"Access denied: Doctor '{req.doctor_id}' is not authorized for '{req.biochip_id}'",
+        )
+        raise HTTPException(
+            status_code=403,
+            detail=f"Access Denied: Doctor '{req.doctor_id}' does not have clinical clearance for biochip '{req.biochip_id}'."
+        )
+
+    # Doctor ML-KEM-768 keypair
+    import oqs
+    doc_sk = None
+    if req.doctor_kem_pk_b64:
+        doc_pk = base64.b64decode(req.doctor_kem_pk_b64)
+    else:
+        kem_gen = oqs.KeyEncapsulation(KEM_ALG)
+        doc_pk = kem_gen.generate_keypair()
+        doc_sk = kem_gen.export_secret_key()
+
+    # Step 2: KMS ML-KEM-768 Encapsulation
+    ct_kem, shared_secret = encapsulate(doc_pk, KEM_ALG)
+
+    # Step 3: HKDF-SHA256 derivation
+    session_id = str(uuid.uuid4())
+    nonce_c = os.urandom(16)
+    k_session = derive_session_key(shared_secret, nonce_c, req.doctor_id, session_id)
+
+    # Step 4: Get and encrypt patient telemetry for this biochip
+    patients = _get_biochip_patients(req.biochip_id)
+    payload_bytes = json.dumps(patients).encode("utf-8")
+
+    from app.config import IV_ROLE_SERVER
+    msg_id = str(uuid.uuid4())
+    counter = 1
+    ct_payload, nonce = aead_encrypt(
+        key=k_session,
+        plaintext=payload_bytes,
+        role=IV_ROLE_SERVER,
+        counter=counter,
+        device_id=req.biochip_id,
+        session_id=session_id,
+        message_id=msg_id,
+    )
+
+    # Step 5: Server signs package with ML-DSA-65
+    server_sk, server_vk = _get_server_sig_keys()
+    package_to_sign = ct_kem + ct_payload + session_id.encode("utf-8")
+    server_sig = sig_sign(server_sk, package_to_sign, CTX_SRESP, SIG_ALG)
+
+    audit.log(
+        actor=req.doctor_id,
+        event_type="DOCTOR_TELEMETRY_DISPATCHED",
+        outcome="ACCEPTED",
+        device_id=req.biochip_id,
+        details=f"Dispatched {len(patients)} encrypted records via ML-KEM-768 + AES-256-GCM (session={session_id[:8]})",
+    )
+
+    return {
+        "status": "ENCRYPTED_SUCCESS",
+        "doctor_id": req.doctor_id,
+        "biochip_id": req.biochip_id,
+        "session_id": session_id,
+        "message_id": msg_id,
+        "patient_count": len(patients),
+        "nonce_c_b64": base64.b64encode(nonce_c).decode(),
+        "doctor_kem_pk_b64": base64.b64encode(doc_pk).decode(),
+        "doctor_kem_sk_b64": base64.b64encode(doc_sk).decode() if doc_sk else None,
+        "kem_ciphertext_b64": base64.b64encode(ct_kem).decode(),
+        "kem_ciphertext_len": len(ct_kem),
+        "aead_ciphertext_b64": base64.b64encode(ct_payload).decode(),
+        "aead_ciphertext_len": len(ct_payload),
+        "nonce_b64": base64.b64encode(nonce).decode(),
+        "server_signature_b64": base64.b64encode(server_sig).decode(),
+        "server_vk_preview": server_vk.hex()[:32] + "...",
+    }
+
+
+@app.post("/api/doctor/decrypt-telemetry")
+def doctor_decrypt_telemetry(req: DoctorDecryptRequest):
+    """
+    Doctor client terminal decapsulates ML-KEM-768 secret, derives session key,
+    and decrypts AES-256-GCM patient vitals payload.
+    """
+    audit = get_audit_logger()
+    try:
+        doc_sk = base64.b64decode(req.doctor_kem_sk_b64)
+        ct_kem = base64.b64decode(req.kem_ciphertext_b64)
+        ct_payload = base64.b64decode(req.aead_ciphertext_b64)
+        nonce = base64.b64decode(req.nonce_b64)
+        nonce_c = base64.b64decode(req.nonce_c_b64)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid base64 encoding")
+
+    # Step 1: ML-KEM-768 decapsulation
+    import oqs
+    try:
+        kem_obj = oqs.KeyEncapsulation(KEM_ALG, secret_key=doc_sk)
+        shared_secret = kem_obj.decap_secret(ct_kem)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"ML-KEM-768 Decapsulation failed: {exc}")
+
+    # Step 2: HKDF-SHA256 session key derivation
+    k_session = derive_session_key(shared_secret, nonce_c, req.doctor_id, req.session_id)
+
+    # Step 3: AES-256-GCM decryption
+    try:
+        plaintext_bytes = aead_decrypt(
+            key=k_session,
+            ciphertext_with_tag=ct_payload,
+            nonce=nonce,
+            device_id=req.biochip_id,
+            session_id=req.session_id,
+            message_id=req.message_id or "msg-001",
+            counter=1,
+        )
+    except Exception as exc:
+        audit.log(
+            actor=req.doctor_id,
+            event_type="DOCTOR_DECRYPTION_FAILED",
+            outcome="REJECTED",
+            device_id=req.biochip_id,
+            details=f"AEAD Tag Mismatch or Tampering: {exc}",
+        )
+        raise HTTPException(status_code=400, detail="AES-256-GCM tag verification failed (ciphertext corrupted)")
+
+    patients = json.loads(plaintext_bytes.decode("utf-8"))
+
+    audit.log(
+        actor=req.doctor_id,
+        event_type="DOCTOR_DECRYPTION_VERIFIED",
+        outcome="ACCEPTED",
+        device_id=req.biochip_id,
+        details=f"Doctor decapsulated shared secret and decrypted {len(patients)} records via AES-256-GCM",
+    )
+
+    return {
+        "status": "DECRYPTED_SUCCESS",
+        "doctor_id": req.doctor_id,
+        "biochip_id": req.biochip_id,
+        "shared_secret_preview": shared_secret.hex()[:32] + "...",
+        "session_key_preview": k_session.hex()[:32] + "...",
+        "gcm_tag_verified": True,
+        "record_count": len(patients),
+        "patients": patients,
+    }
+
+
+# ─── Admin Clearance & Authorizations Matrix ─────────────────────────────────
+
+@app.get("/api/admin/authorizations")
+def get_admin_authorizations():
+    """Admin view: complete matrix of doctor access permissions across all biochips."""
+    matrix = []
+    for username, u in USERS.items():
+        if u["role"] == "DOCTOR":
+            matrix.append({
+                "username": username,
+                "name": u["name"],
+                "specialty": u["specialty"],
+                "authorized_biochips": u.get("authorized_biochips", []),
+            })
+    return {
+        "doctors": matrix,
+        "all_biochips": [b["biochip_id"] for b in BIOCHIPS_CATALOG],
+    }
+
+
+@app.post("/api/admin/authorizations/toggle")
+def toggle_admin_authorization(req: TogglePermissionRequest):
+    """Admin dynamically grants or revokes biochip clearance for a doctor."""
+    audit = get_audit_logger()
+    user = USERS.get(req.doctor_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    auth_list = user.setdefault("authorized_biochips", [])
+    if req.biochip_id in auth_list:
+        auth_list.remove(req.biochip_id)
+        action = "REVOKED"
+    else:
+        auth_list.append(req.biochip_id)
+        action = "GRANTED"
+
+    audit.log(
+        actor="admin",
+        event_type="DOCTOR_PERMISSION_CHANGED",
+        outcome="ACCEPTED",
+        device_id=req.biochip_id,
+        details=f"Admin {action} access clearance for {req.doctor_id} to biochip {req.biochip_id}",
+    )
+
+    return {
+        "status": "SUCCESS",
+        "doctor_id": req.doctor_id,
+        "biochip_id": req.biochip_id,
+        "action": action,
+        "authorized_biochips": auth_list,
+    }
 
 
 @app.get("/api/info")
