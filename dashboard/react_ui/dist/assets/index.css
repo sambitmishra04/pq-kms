@@ -252,3 +252,110 @@ code, pre, .font-mono {
 .live-pulse {
   animation: subtle-pulse 2s infinite ease-in-out;
 }
+
+/* ─── Biochip 8x8 Physical Grid Styles ────────────────────────────────────── */
+.biochip-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  gap: 4px;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  aspect-ratio: 1 / 1;
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.biochip-cell {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  aspect-ratio: 1 / 1;
+  user-select: none;
+}
+
+.biochip-cell.active-electrode {
+  background: #f0fdf4;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.25);
+}
+
+.biochip-cell.detector-cell {
+  border: 2px dashed #15803d;
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.biochip-cell.sample-cell {
+  border: 2px dashed #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.biochip-cell.reagent-cell {
+  border: 2px dashed #0284c7;
+  background: rgba(2, 132, 199, 0.08);
+}
+
+.biochip-cell.waste-cell {
+  border: 2px dashed #64748b;
+  background: rgba(100, 116, 139, 0.08);
+}
+
+.biochip-droplet {
+  width: 76%;
+  height: 76%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.65rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: center;
+  border: 2px solid #ffffff;
+}
+
+.biochip-droplet:hover {
+  transform: scale(1.18);
+}
+
+/* Custom Range Slider */
+.slider-input {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #e2e8f0;
+  outline: none;
+}
+.slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #15803d;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.slider-input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #15803d;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}

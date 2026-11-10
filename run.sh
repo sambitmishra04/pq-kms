@@ -52,10 +52,33 @@ case "$cmd" in
     echo "[Dashboard] Starting Streamlit Medical SOC & Biochip Simulator Dashboard..."
     streamlit run dashboard/app.py --server.port 8501
     ;;
-  dashboard-old|dashboard-react)
+  dashboard-react|dashboard-medical)
     activate
     cd "$PROJ"
-    echo "[Dashboard] Starting Modern Clean Interactive React UI Dashboard..."
+    echo "[Dashboard] Building and starting Production-Grade Medical Biochip Admin React UI..."
+    node dashboard/react_ui/build.cjs
+    python -m dashboard.server --port "${REACT_DASHBOARD_PORT:-8502}"
+    ;;
+  dashboard-v1|dashboard-old)
+    activate
+    cd "$PROJ"
+    echo "[Dashboard] Starting Saved V1 Clean React UI Dashboard..."
+    if [ -f "$PROJ/dashboard/react_ui/src/App.v1.jsx" ]; then
+      node -e '
+        const fs = require("fs");
+        const vm = require("vm");
+        const src = fs.readFileSync("dashboard/react_ui/src/App.v1.jsx", "utf8");
+        const babelCode = fs.readFileSync("dashboard/react_ui/assets/vendor/babel.min.js", "utf8");
+        const context = { window: {}, console };
+        vm.createContext(context);
+        vm.runInContext(babelCode, context);
+        const Babel = context.Babel || context.window.Babel;
+        const processed = src.replace(/import\s+React.*?from\s+["\x27][^"\x27]+["\x27];?/g, "").replace(/export\s+default\s+function\s+App/g, "function App");
+        const transformed = Babel.transform(processed, { presets: ["react"] });
+        const bundle = `(function() { const { useState, useEffect, useRef, useMemo } = React;\n${transformed.code}\nconst rootElement = document.getElementById("root"); if (rootElement) { ReactDOM.createRoot(rootElement).render(React.createElement(App)); } })();`;
+        fs.writeFileSync("dashboard/react_ui/dist/assets/app.bundle.js", bundle);
+      '
+    fi
     python -m dashboard.server --port "${REACT_DASHBOARD_PORT:-8502}"
     ;;
   dashboard-old-streamlit|dashboard-classic-streamlit)
@@ -96,14 +119,15 @@ case "$cmd" in
     echo "      View presentation:    bash run.sh slides"
     ;;
   *)
-    echo "Usage: bash run.sh [setup|server|test|bench|dashboard|dashboard-old|dashboard-old-streamlit|data|demo|slides|report|all]"
+    echo "Usage: bash run.sh [setup|server|test|bench|dashboard|dashboard-react|dashboard-v1|dashboard-old-streamlit|data|demo|slides|report|all]"
     echo ""
     echo "  setup                   — create venv, install dependencies, download data"
     echo "  server                  — start the FastAPI PQ-KMS server"
     echo "  test                    — run full pytest security + functional test suite (23 tests)"
     echo "  bench                   — run all benchmark experiments, generate tables & figures"
     echo "  dashboard               — start the Streamlit Medical SOC & Biochip simulator dashboard"
-    echo "  dashboard-old           — start the modern clean interactive React UI dashboard (replaced old UI)"
+    echo "  dashboard-react         — start the Production-Grade Medical Biochip Admin React UI (port 8502)"
+    echo "  dashboard-v1            — start the Saved V1 Clean React UI Dashboard (port 8502)"
     echo "  dashboard-old-streamlit — start the original/classic Streamlit dashboard (before-change version)"
     echo "  data          — download/generate biomedical vitals data"
     echo "  demo          — run one-click automated live evaluator demonstration"

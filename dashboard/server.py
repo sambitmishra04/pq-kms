@@ -133,6 +133,172 @@ class ProvisionDeviceRequest(BaseModel):
     role: str = "BIOCHIP_NODE"
 
 
+class RevokeDeviceRequest(BaseModel):
+    device_id: str
+    reason: str = "Quarantined by clinical administrator"
+
+
+class LoadAssayRequest(BaseModel):
+    patient_glucose: float = 220.0
+
+
+class TamperAttackRequest(BaseModel):
+    true_glucose: float = 220.0
+    falsified_glucose: float = 110.0
+
+
+# ─── Biochip Simulation State ────────────────────────────────────────────────
+from app.simulation.dmfb_simulator import DMFBBiochip, get_biochip
+from app.simulation.attack_lab import AttackLab
+
+_sim_chip: DMFBBiochip = get_biochip()
+_sim_steps = []
+_sim_step_idx: int = 0
+_sim_patient_glucose: float = 220.0
+
+
+def _build_sim_response() -> dict[str, Any]:
+    global _sim_chip, _sim_steps, _sim_step_idx, _sim_patient_glucose
+    snap = _sim_chip.get_state_snapshot()
+    sensor_data = _sim_chip.read_optical_sensor()
+
+    cur_step = None
+    if 0 < _sim_step_idx <= len(_sim_steps):
+        s = _sim_steps[_sim_step_idx - 1]
+        cur_step = {
+            "step_num": s.step_num,
+            "operation": s.operation,
+            "description": s.description,
+            "target_droplets": s.target_droplets,
+            "active_electrodes": s.active_electrodes,
+        }
+
+    next_step = None
+    if _sim_step_idx < len(_sim_steps):
+        s = _sim_steps[_sim_step_idx]
+        next_step = {
+            "step_num": s.step_num,
+            "operation": s.operation,
+            "description": s.description,
+            "target_droplets": s.target_droplets,
+            "active_electrodes": s.active_electrodes,
+        }
+
+    return {
+        **snap,
+        "current_step_idx": _sim_step_idx,
+        "total_steps": len(_sim_steps),
+        "patient_glucose": _sim_patient_glucose,
+        "current_step_info": cur_step,
+        "next_step_info": next_step,
+        "sensor_data": sensor_data,
+    }
+
+
+@app.get("/api/simulator/state")
+def get_simulator_state():
+    """Current state snapshot of 8x8 DMFB biochip grid, droplets, electrodes, and sensor."""
+    global _sim_steps
+    if not _sim_steps and _sim_chip.status == "IDLE":
+        # Auto-initialize with standard patient glucose assay
+        _sim_steps = _sim_chip.load_glucose_assay(patient_glucose=_sim_patient_glucose)
+    return _build_sim_response()
+
+
+@app.post("/api/simulator/load")
+def load_simulator_assay(req: LoadAssayRequest):
+    """Load new enzymatic glucose assay protocol onto the biochip."""
+    global _sim_steps, _sim_step_idx, _sim_patient_glucose
+    _sim_patient_glucose = float(req.patient_glucose)
+    _sim_steps = _sim_chip.load_glucose_assay(patient_glucose=_sim_patient_glucose)
+    _sim_step_idx = 0
+    return _build_sim_response()
+
+
+@app.post("/api/simulator/step")
+def step_simulator():
+    """Execute next physical electrowetting actuation step."""
+    global _sim_steps, _sim_step_idx
+    if not _sim_steps:
+        _sim_steps = _sim_chip.load_glucose_assay(patient_glucose=_sim_patient_glucose)
+        _sim_step_idx = 0
+    if _sim_step_idx < len(_sim_steps):
+        step = _sim_steps[_sim_step_idx]
+        _sim_chip.execute_step(step)
+        _sim_step_idx += 1
+    return _build_sim_response()
+
+
+@app.post("/api/simulator/run_all")
+def run_all_simulator():
+    """Execute all remaining actuation steps through optical absorption biosensing."""
+    global _sim_steps, _sim_step_idx
+    if not _sim_steps:
+        _sim_steps = _sim_chip.load_glucose_assay(patient_glucose=_sim_patient_glucose)
+        _sim_step_idx = 0
+    while _sim_step_idx < len(_sim_steps):
+        step = _sim_steps[_sim_step_idx]
+        _sim_chip.execute_step(step)
+        _sim_step_idx += 1
+    return _build_sim_response()
+
+
+@app.post("/api/simulator/reset")
+def reset_simulator():
+    """Reset physical biochip electrodes and droplet state to clean idle baseline."""
+    global _sim_steps, _sim_step_idx
+    _sim_chip.reset()
+    _sim_steps = []
+    _sim_step_idx = 0
+    return _build_sim_response()
+
+
+# ─── Cyber-Physical Attack Lab Endpoints ─────────────────────────────────────
+@app.post("/api/attack/tamper")
+def attack_tamper(req: TamperAttackRequest):
+    """Ali et al. in-transit assay result manipulation attack simulation."""
+    lab = AttackLab()
+    return lab.run_glucose_tamper_attack(req.true_glucose, req.falsified_glucose)
+
+
+@app.post("/api/attack/replay")
+def attack_replay():
+    """Guo et al. diagnostic message replay attack simulation."""
+    lab = AttackLab()
+    return lab.run_replay_attack()
+
+
+@app.get("/api/attack/quantum")
+def attack_quantum():
+    """Shor's algorithm harvest-now decrypt-later threat analysis."""
+    lab = AttackLab()
+    return lab.run_quantum_threat_comparison()
+
+
+# ─── Device Quarantine / Revocation Endpoint ─────────────────────────────────
+@app.post("/api/devices/revoke")
+def revoke_device_endpoint(req: RevokeDeviceRequest):
+    """Emergency quarantine and revocation of a biochip node with ML-DSA-65 signed CRL."""
+    key_path = Path(SERVER_KEY_PATH)
+    if not key_path.exists():
+        raise HTTPException(status_code=500, detail="Server signing key not found")
+    data = json.loads(key_path.read_text(encoding="utf-8"))
+    server_sk = bytes.fromhex(data["signing_key"])
+
+    from app.revocation.revocation import revoke_device
+    try:
+        new_crl = revoke_device(req.device_id, server_sk)
+        return {
+            "status": "SUCCESS",
+            "device_id": req.device_id,
+            "message": f"Device {req.device_id} quarantined and revoked. Signed CRL updated.",
+            "crl_version": new_crl.get("list_version"),
+            "issued_at": new_crl.get("issued_at"),
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
 @app.post("/api/devices/provision")
 def provision_device_api(req: ProvisionDeviceRequest):
     """Admin/Evaluator provisions a new biochip and generates post-quantum keys (Algorithm 1)."""

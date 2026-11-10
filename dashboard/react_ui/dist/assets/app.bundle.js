@@ -18,6 +18,62 @@ const Icons = {
   }, p), /*#__PURE__*/React.createElement("path", {
     d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
   })),
+  microscope: p => /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24",
+    width: p.size || 18,
+    height: p.size || 18,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.8",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, p), /*#__PURE__*/React.createElement("path", {
+    d: "M6 18h8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M3 22h18"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M14 22a7 7 0 1 0 0-14h-1"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M9 14h2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"
+  })),
+  crosshair: p => /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24",
+    width: p.size || 18,
+    height: p.size || 18,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.8",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, p), /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "10"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "22",
+    x2: "18",
+    y1: "12",
+    y2: "12"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "6",
+    x2: "2",
+    y1: "12",
+    y2: "12"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "12",
+    x2: "12",
+    y1: "2",
+    y2: "6"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "12",
+    x2: "12",
+    y1: "18",
+    y2: "22"
+  })),
   key: p => /*#__PURE__*/React.createElement("svg", _extends({
     viewBox: "0 0 24 24",
     width: p.size || 18,
@@ -85,33 +141,6 @@ const Icons = {
     x2: "8",
     y1: "17",
     y2: "17"
-  }), /*#__PURE__*/React.createElement("polyline", {
-    points: "10 9 9 9 8 9"
-  })),
-  chart: p => /*#__PURE__*/React.createElement("svg", _extends({
-    viewBox: "0 0 24 24",
-    width: p.size || 18,
-    height: p.size || 18,
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "1.8",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }, p), /*#__PURE__*/React.createElement("line", {
-    x1: "18",
-    x2: "18",
-    y1: "20",
-    y2: "10"
-  }), /*#__PURE__*/React.createElement("line", {
-    x1: "12",
-    x2: "12",
-    y1: "20",
-    y2: "4"
-  }), /*#__PURE__*/React.createElement("line", {
-    x1: "6",
-    x2: "6",
-    y1: "20",
-    y2: "14"
   })),
   lock: p => /*#__PURE__*/React.createElement("svg", _extends({
     viewBox: "0 0 24 24",
@@ -303,34 +332,31 @@ const Icons = {
     x2: "19",
     y2: "12"
   })),
-  zoom: p => /*#__PURE__*/React.createElement("svg", _extends({
+  play: p => /*#__PURE__*/React.createElement("svg", _extends({
     viewBox: "0 0 24 24",
     width: p.size || 18,
     height: p.size || 18,
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: "1.8",
+    strokeWidth: "2",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  }, p), /*#__PURE__*/React.createElement("circle", {
-    cx: "11",
-    cy: "11",
-    r: "8"
-  }), /*#__PURE__*/React.createElement("line", {
-    x1: "21",
-    x2: "16.65",
-    y1: "21",
-    y2: "16.65"
-  }), /*#__PURE__*/React.createElement("line", {
-    x1: "11",
-    y1: "8",
-    x2: "11",
-    y2: "14"
-  }), /*#__PURE__*/React.createElement("line", {
-    x1: "8",
-    x2: "14",
-    y1: "11",
-    y2: "11"
+  }, p), /*#__PURE__*/React.createElement("polygon", {
+    points: "5 3 19 12 5 21 5 3"
+  })),
+  fastForward: p => /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24",
+    width: p.size || 18,
+    height: p.size || 18,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, p), /*#__PURE__*/React.createElement("polygon", {
+    points: "13 19 22 12 13 5 13 19"
+  }), /*#__PURE__*/React.createElement("polygon", {
+    points: "2 19 11 12 2 5 2 19"
   })),
   checkCircle: p => /*#__PURE__*/React.createElement("svg", _extends({
     viewBox: "0 0 24 24",
@@ -345,110 +371,29 @@ const Icons = {
     d: "M22 11.08V12a10 10 0 1 1-5.93-9.14"
   }), /*#__PURE__*/React.createElement("polyline", {
     points: "22 4 12 14.01 9 11.01"
+  })),
+  ban: p => /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24",
+    width: p.size || 18,
+    height: p.size || 18,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, p), /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "10"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "4.93",
+    x2: "19.07",
+    y1: "4.93",
+    y2: "19.07"
   }))
 };
 
-// ─── Chart Component Wrapper (Configured for Green & White Theme) ────────────
-function ChartCanvas({
-  type,
-  data,
-  options,
-  height = 240
-}) {
-  const canvasRef = useRef(null);
-  const chartInstanceRef = useRef(null);
-  useEffect(() => {
-    if (!canvasRef.current || !window.Chart) return;
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
-    }
-    const ctx = canvasRef.current.getContext('2d');
-    chartInstanceRef.current = new window.Chart(ctx, {
-      type,
-      data,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: {
-              color: '#475569',
-              font: {
-                family: 'Inter',
-                size: 12,
-                weight: '500'
-              },
-              boxWidth: 12,
-              boxHeight: 12,
-              usePointStyle: true
-            }
-          },
-          tooltip: {
-            backgroundColor: '#0f172a',
-            borderColor: '#334155',
-            borderWidth: 1,
-            titleColor: '#ffffff',
-            bodyColor: '#e2e8f0',
-            cornerRadius: 6,
-            padding: 8,
-            titleFont: {
-              family: 'Inter',
-              size: 12,
-              weight: '600'
-            },
-            bodyFont: {
-              family: 'IBM Plex Mono',
-              size: 11
-            }
-          }
-        },
-        scales: type === 'bar' ? {
-          x: {
-            grid: {
-              color: '#f1f5f9'
-            },
-            ticks: {
-              color: '#64748b',
-              font: {
-                family: 'Inter',
-                size: 11
-              }
-            }
-          },
-          y: {
-            grid: {
-              color: '#f1f5f9'
-            },
-            ticks: {
-              color: '#64748b',
-              font: {
-                family: 'IBM Plex Mono',
-                size: 11
-              }
-            }
-          }
-        } : {},
-        ...options
-      }
-    });
-    return () => {
-      if (chartInstanceRef.current) {
-        chartInstanceRef.current.destroy();
-      }
-    };
-  }, [type, JSON.stringify(data), JSON.stringify(options)]);
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: 'relative',
-      width: '100%',
-      height
-    }
-  }, /*#__PURE__*/React.createElement("canvas", {
-    ref: canvasRef
-  }));
-}
-
-// ─── Status Badge Component (Clean, Professional Human Styling) ───────────────
+// ─── Status Badge Component ───────────────────────────────────────────────────
 function Badge({
   status,
   label
@@ -456,16 +401,16 @@ function Badge({
   const s = (status || '').toUpperCase();
   let cls = 'badge-neutral';
   let dotColor = '#64748b';
-  if (['AUTHORIZED', 'ACTIVE', 'ACCEPTED', 'VALID', 'PASS'].includes(s)) {
+  if (['AUTHORIZED', 'ACTIVE', 'ACCEPTED', 'VALID', 'PASS', 'PROTECTED'].includes(s)) {
     cls = 'badge-authorized';
     dotColor = '#16a34a';
-  } else if (['REVOKED', 'REJECTED', 'COMPROMISED', 'FAIL', 'BROKEN'].includes(s)) {
+  } else if (['REVOKED', 'REJECTED', 'COMPROMISED', 'FAIL', 'BROKEN', 'VULNERABLE'].includes(s)) {
     cls = 'badge-revoked';
     dotColor = '#dc2626';
   } else if (['PENDING', 'DEACTIVATED', 'WARNING'].includes(s)) {
     cls = 'badge-pending';
     dotColor = '#d97706';
-  } else if (['DISABLED', 'DESTROYED', 'INFO'].includes(s)) {
+  } else if (['DISABLED', 'DESTROYED', 'INFO', 'IDLE'].includes(s)) {
     cls = 'badge-neutral';
     dotColor = '#64748b';
   }
@@ -505,12 +450,179 @@ function exportToCsv(filename, rows) {
   document.body.removeChild(link);
 }
 
+// ─── 2D DMFB Physical Biochip Electrode Grid ──────────────────────────────────
+function BiochipGridComponent({
+  simData
+}) {
+  const gridWidth = simData?.grid_size ? simData.grid_size[0] : 8;
+  const gridHeight = simData?.grid_size ? simData.grid_size[1] : 8;
+  const activeSet = useMemo(() => {
+    const s = new Set();
+    (simData?.active_electrodes || []).forEach(([x, y]) => s.add(`${x},${y}`));
+    return s;
+  }, [simData?.active_electrodes]);
+  const detectorCoord = simData?.detector_coord || [3, 6];
+  const sampleCoord = simData?.dispensers?.sample || [0, 2];
+  const reagentCoord = simData?.dispensers?.reagent || [7, 2];
+  const wasteCoord = simData?.dispensers?.waste || [7, 7];
+  const droplets = simData?.droplets || [];
+
+  // Generate 8x8 cell items (Row 0 to 7, Col 0 to 7)
+  const cells = [];
+  for (let y = 0; y < gridHeight; y++) {
+    for (let x = 0; x < gridWidth; x++) {
+      const isDetector = x === detectorCoord[0] && y === detectorCoord[1];
+      const isSample = x === sampleCoord[0] && y === sampleCoord[1];
+      const isReagent = x === reagentCoord[0] && y === reagentCoord[1];
+      const isWaste = x === wasteCoord[0] && y === wasteCoord[1];
+      const isActive = activeSet.has(`${x},${y}`);
+      const cellDroplet = droplets.find(d => d.x === x && d.y === y);
+      let cellClass = 'biochip-cell';
+      if (isActive) cellClass += ' active-electrode';
+      if (isDetector) cellClass += ' detector-cell';else if (isSample) cellClass += ' sample-cell';else if (isReagent) cellClass += ' reagent-cell';else if (isWaste) cellClass += ' waste-cell';
+      let cellTitle = `Electrode (${x}, ${y})`;
+      if (isDetector) cellTitle += ' [Optical Photodiode Sensor]';
+      if (isSample) cellTitle += ' [Serum Sample Dispenser]';
+      if (isReagent) cellTitle += ' [GOx Reagent Dispenser]';
+      if (isWaste) cellTitle += ' [Waste Reservoir]';
+      if (cellDroplet) cellTitle += ` — Droplet: ${cellDroplet.label} (${cellDroplet.volume_ul} µL, ${cellDroplet.concentration_mg_dl} mg/dL)`;
+      cells.push( /*#__PURE__*/React.createElement("div", {
+        key: `${x}-${y}`,
+        className: cellClass,
+        title: cellTitle
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          position: 'absolute',
+          top: 2,
+          left: 3,
+          fontSize: '0.55rem',
+          color: '#94a3b8',
+          pointerEvents: 'none'
+        }
+      }, x, ",", y), cellDroplet && /*#__PURE__*/React.createElement("div", {
+        className: "biochip-droplet",
+        style: {
+          backgroundColor: cellDroplet.color || '#3b82f6'
+        }
+      }, cellDroplet.id === 'D-SAMPLE' ? 'S' : cellDroplet.id === 'D-REAGENT' ? 'R' : cellDroplet.id === 'D-MIXED' ? 'M' : cellDroplet.id === 'D-TEST' ? 'T' : 'W'), !cellDroplet && isDetector && /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: '0.62rem',
+          fontWeight: 700,
+          color: '#15803d'
+        }
+      }, "OPT"), !cellDroplet && isSample && /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: '0.62rem',
+          fontWeight: 700,
+          color: '#ef4444'
+        }
+      }, "IN-S"), !cellDroplet && isReagent && /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: '0.62rem',
+          fontWeight: 700,
+          color: '#0284c7'
+        }
+      }, "IN-R"), !cellDroplet && isWaste && /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: '0.62rem',
+          fontWeight: 700,
+          color: '#64748b'
+        }
+      }, "WST")));
+    }
+  }
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "biochip-grid"
+  }, cells), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexWrap: 'wrap',
+      gap: 14,
+      marginTop: 12,
+      fontSize: '0.74rem',
+      color: '#64748b'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 10,
+      height: 10,
+      borderRadius: 2,
+      backgroundColor: '#f0fdf4',
+      border: '1px solid #16a34a'
+    }
+  }), /*#__PURE__*/React.createElement("span", null, "Active Electrowetting")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 10,
+      height: 10,
+      borderRadius: 2,
+      border: '2px dashed #15803d',
+      backgroundColor: 'rgba(22, 163, 74, 0.1)'
+    }
+  }), /*#__PURE__*/React.createElement("span", null, "Photodiode (3,6)")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 10,
+      height: 10,
+      borderRadius: 2,
+      border: '2px dashed #ef4444',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)'
+    }
+  }), /*#__PURE__*/React.createElement("span", null, "Sample In (0,2)")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 10,
+      height: 10,
+      borderRadius: 2,
+      border: '2px dashed #0284c7',
+      backgroundColor: 'rgba(2, 132, 199, 0.1)'
+    }
+  }), /*#__PURE__*/React.createElement("span", null, "Reagent In (7,2)")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 10,
+      height: 10,
+      borderRadius: 2,
+      border: '2px dashed #64748b',
+      backgroundColor: 'rgba(100, 116, 139, 0.1)'
+    }
+  }), /*#__PURE__*/React.createElement("span", null, "Waste (7,7)"))));
+}
+
 // ─── Main Application ─────────────────────────────────────────────────────────
 function App() {
-  const [activeTab, setActiveTab] = useState('devices');
+  const [activeTab, setActiveTab] = useState('simulator');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [autoRefreshSecs, setAutoRefreshSecs] = useState(0); // 0 = off
+  const [autoRefreshSecs, setAutoRefreshSecs] = useState(0);
   const [backendOnline, setBackendOnline] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
@@ -532,18 +644,28 @@ function App() {
     outcome_counts: {},
     events: []
   });
-  const [benchmarksData, setBenchmarksData] = useState({
-    e1_primitive_benchmarks: [],
-    figures: [],
-    table20_markdown: '',
-    table20_comparison: []
-  });
   const [securityData, setSecurityData] = useState({
     security_test_cases: [],
     test_summary: [],
     crl: null,
     message_stats: {}
   });
+
+  // Biochip Simulator state
+  const [simData, setSimData] = useState(null);
+  const [simLoading, setSimLoading] = useState(false);
+  const [patientGlucoseInput, setPatientGlucoseInput] = useState(220.0);
+
+  // Attack Lab states
+  const [attackTab, setAttackTab] = useState('tamper'); // 'tamper' | 'replay' | 'quantum'
+  const [tamperTrueGlucose, setTamperTrueGlucose] = useState(220.0);
+  const [tamperInjectedGlucose, setTamperInjectedGlucose] = useState(110.0);
+  const [tamperLoading, setTamperLoading] = useState(false);
+  const [tamperResult, setTamperResult] = useState(null);
+  const [replayLoading, setReplayLoading] = useState(false);
+  const [replayResult, setReplayResult] = useState(null);
+  const [quantumResult, setQuantumResult] = useState(null);
+  const [quantumLoading, setQuantumLoading] = useState(false);
 
   // Filter & Search states
   const [deviceSearch, setDeviceSearch] = useState('');
@@ -554,9 +676,8 @@ function App() {
   const [auditSearch, setAuditSearch] = useState('');
 
   // Modals
-  const [envModalOpen, setEnvModalOpen] = useState(false);
+  const [diagnosticsModalOpen, setDiagnosticsModalOpen] = useState(false);
   const [selectedAuditLog, setSelectedAuditLog] = useState(null);
-  const [selectedFigure, setSelectedFigure] = useState(null);
   const [hashVerificationStatus, setHashVerificationStatus] = useState(null);
 
   // Device Provisioning State
@@ -566,6 +687,14 @@ function App() {
   const [provisionLoading, setProvisionLoading] = useState(false);
   const [provisionResult, setProvisionResult] = useState(null);
   const [provisionError, setProvisionError] = useState(null);
+
+  // Device Revoke / Quarantine State
+  const [revokeModalOpen, setRevokeModalOpen] = useState(false);
+  const [deviceToRevoke, setDeviceToRevoke] = useState('');
+  const [revokeReason, setRevokeReason] = useState('Quarantined by clinical biochip administrator');
+  const [revokeLoading, setRevokeLoading] = useState(false);
+  const [revokeResult, setRevokeResult] = useState(null);
+  const [revokeError, setRevokeError] = useState(null);
 
   // Pagination states
   const [devicePage, setDevicePage] = useState(1);
@@ -577,7 +706,7 @@ function App() {
   const fetchAllData = async (isManual = false) => {
     if (isManual) setRefreshing(true);
     try {
-      const [rInfo, rDev, rSess, rAudit, rBench, rSec] = await Promise.all([fetch('/api/info').then(r => r.json()).catch(() => ({})), fetch('/api/devices').then(r => r.json()).catch(() => ({
+      const [rInfo, rDev, rSess, rAudit, rSec, rSim] = await Promise.all([fetch('/api/info').then(r => r.json()).catch(() => ({})), fetch('/api/devices').then(r => r.json()).catch(() => ({
         total: 0,
         status_counts: {},
         devices: []
@@ -590,21 +719,18 @@ function App() {
         chain_break_index: null,
         outcome_counts: {},
         events: []
-      })), fetch('/api/benchmarks').then(r => r.json()).catch(() => ({
-        e1_primitive_benchmarks: [],
-        figures: []
       })), fetch('/api/security').then(r => r.json()).catch(() => ({
         security_test_cases: [],
         test_summary: [],
         crl: null,
         message_stats: {}
-      }))]);
+      })), fetch('/api/simulator/state').then(r => r.json()).catch(() => null)]);
       setInfo(rInfo);
       setDevicesData(rDev);
       setSessionsData(rSess);
       setAuditData(rAudit);
-      setBenchmarksData(rBench);
       setSecurityData(rSec);
+      if (rSim) setSimData(rSim);
       setBackendOnline(true);
       setLastUpdated(new Date());
     } catch (err) {
@@ -628,26 +754,120 @@ function App() {
     return () => clearInterval(interval);
   }, [autoRefreshSecs]);
 
-  // Explicit Hash Chain Verification
-  const verifyHashChain = async () => {
-    setHashVerificationStatus('verifying');
+  // ─── Biochip Simulator Actions ───────────────────────────────────────────────
+  const handleLoadAssay = async glucose => {
+    setSimLoading(true);
     try {
-      const res = await fetch('/api/audit/verify', {
-        method: 'POST'
+      const res = await fetch('/api/simulator/load', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          patient_glucose: glucose
+        })
       }).then(r => r.json());
-      setHashVerificationStatus(res);
+      setSimData(res);
       fetchAllData();
     } catch (err) {
-      setHashVerificationStatus({
-        status: 'Error during verification'
-      });
+      console.error('Failed to load assay:', err);
+    } finally {
+      setSimLoading(false);
+    }
+  };
+  const handleStepSimulator = async () => {
+    setSimLoading(true);
+    try {
+      const res = await fetch('/api/simulator/step', {
+        method: 'POST'
+      }).then(r => r.json());
+      setSimData(res);
+    } catch (err) {
+      console.error('Failed to step simulator:', err);
+    } finally {
+      setSimLoading(false);
+    }
+  };
+  const handleRunAllSimulator = async () => {
+    setSimLoading(true);
+    try {
+      const res = await fetch('/api/simulator/run_all', {
+        method: 'POST'
+      }).then(r => r.json());
+      setSimData(res);
+    } catch (err) {
+      console.error('Failed to run all steps:', err);
+    } finally {
+      setSimLoading(false);
+    }
+  };
+  const handleResetSimulator = async () => {
+    setSimLoading(true);
+    try {
+      const res = await fetch('/api/simulator/reset', {
+        method: 'POST'
+      }).then(r => r.json());
+      setSimData(res);
+    } catch (err) {
+      console.error('Failed to reset simulator:', err);
+    } finally {
+      setSimLoading(false);
     }
   };
 
-  // Device Provisioning Handler
+  // ─── Attack Lab Actions ──────────────────────────────────────────────────────
+  const handleRunTamperAttack = async () => {
+    setTamperLoading(true);
+    try {
+      const res = await fetch('/api/attack/tamper', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          true_glucose: Number(tamperTrueGlucose),
+          falsified_glucose: Number(tamperInjectedGlucose)
+        })
+      }).then(r => r.json());
+      setTamperResult(res);
+      fetchAllData(); // Refresh audit log as attack trigger logs an event!
+    } catch (err) {
+      console.error('Tamper attack error:', err);
+    } finally {
+      setTamperLoading(false);
+    }
+  };
+  const handleRunReplayAttack = async () => {
+    setReplayLoading(true);
+    try {
+      const res = await fetch('/api/attack/replay', {
+        method: 'POST'
+      }).then(r => r.json());
+      setReplayResult(res);
+      fetchAllData();
+    } catch (err) {
+      console.error('Replay attack error:', err);
+    } finally {
+      setReplayLoading(false);
+    }
+  };
+  const handleFetchQuantumThreat = async () => {
+    if (quantumResult) return;
+    setQuantumLoading(true);
+    try {
+      const res = await fetch('/api/attack/quantum').then(r => r.json());
+      setQuantumResult(res);
+    } catch (err) {
+      console.error('Quantum threat error:', err);
+    } finally {
+      setQuantumLoading(false);
+    }
+  };
+
+  // ─── Device Provisioning & Quarantine Actions ────────────────────────────────
   const handleProvisionDevice = async e => {
     if (e) e.preventDefault();
-    const devId = newDeviceId.trim() || `DMFB-LAB-${Math.floor(1000 + Math.random() * 9000)}`;
+    const devId = newDeviceId.trim() || `DMFB-ICU-${Math.floor(100 + Math.random() * 900)}`;
     setProvisionLoading(true);
     setProvisionError(null);
     setProvisionResult(null);
@@ -674,8 +894,50 @@ function App() {
       setProvisionLoading(false);
     }
   };
+  const handleRevokeDevice = async () => {
+    if (!deviceToRevoke) return;
+    setRevokeLoading(true);
+    setRevokeError(null);
+    setRevokeResult(null);
+    try {
+      const res = await fetch('/api/devices/revoke', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          device_id: deviceToRevoke,
+          reason: revokeReason
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Failed to quarantine device');
+      }
+      setRevokeResult(data);
+      fetchAllData();
+    } catch (err) {
+      setRevokeError(err.message);
+    } finally {
+      setRevokeLoading(false);
+    }
+  };
+  const verifyHashChain = async () => {
+    setHashVerificationStatus('verifying');
+    try {
+      const res = await fetch('/api/audit/verify', {
+        method: 'POST'
+      }).then(r => r.json());
+      setHashVerificationStatus(res);
+      fetchAllData();
+    } catch (err) {
+      setHashVerificationStatus({
+        status: 'Error during verification'
+      });
+    }
+  };
 
-  // ─── Filtered Data Memoization ──────────────────────────────────────────────
+  // Filtered devices memo
   const filteredDevices = useMemo(() => {
     return (devicesData.devices || []).filter(d => {
       const matchesSearch = d.device_id.toLowerCase().includes(deviceSearch.toLowerCase()) || d.role && d.role.toLowerCase().includes(deviceSearch.toLowerCase());
@@ -697,64 +959,6 @@ function App() {
       return matchesOutcome && matchesSearch;
     });
   }, [auditData.events, auditFilter, auditSearch]);
-
-  // Chart configs (Green and White Theme)
-  const deviceChartData = useMemo(() => {
-    const sc = devicesData.status_counts || {};
-    return {
-      labels: ['AUTHORIZED', 'REVOKED', 'PENDING', 'DISABLED'],
-      datasets: [{
-        data: [sc.AUTHORIZED || 0, sc.REVOKED || 0, sc.PENDING || 0, sc.DISABLED || 0],
-        backgroundColor: ['#15803d', '#dc2626', '#d97706', '#94a3b8'],
-        borderColor: '#ffffff',
-        borderWidth: 2
-      }]
-    };
-  }, [devicesData.status_counts]);
-  const sessionChartData = useMemo(() => {
-    const sc = sessionsData.state_counts || {};
-    return {
-      labels: ['ACTIVE', 'DEACTIVATED', 'DESTROYED', 'COMPROMISED'],
-      datasets: [{
-        label: 'Sessions',
-        data: [sc.ACTIVE || 0, sc.DEACTIVATED || 0, sc.DESTROYED || 0, sc.COMPROMISED || 0],
-        backgroundColor: ['#15803d', '#d97706', '#94a3b8', '#dc2626'],
-        borderRadius: 4
-      }]
-    };
-  }, [sessionsData.state_counts]);
-  const auditChartData = useMemo(() => {
-    const oc = auditData.outcome_counts || {};
-    return {
-      labels: ['ACCEPTED', 'REJECTED', 'INFO'],
-      datasets: [{
-        data: [oc.ACCEPTED || 0, oc.REJECTED || 0, oc.INFO || 0],
-        backgroundColor: ['#15803d', '#dc2626', '#0284c7'],
-        borderColor: '#ffffff',
-        borderWidth: 2
-      }]
-    };
-  }, [auditData.outcome_counts]);
-  const benchmarkChartData = useMemo(() => {
-    const e1 = benchmarksData.e1_primitive_benchmarks || [];
-    const keyOps = e1.filter(row => ['keygen', 'encap', 'decap', 'agree'].includes(row.operation));
-    if (!keyOps.length) return null;
-    const algs = [...new Set(keyOps.map(r => r.algorithm))];
-    const ops = ['keygen', 'encap', 'decap', 'agree'];
-    const colors = ['#15803d', '#0d9488', '#4f46e5', '#d97706', '#0284c7'];
-    return {
-      labels: ops.map(o => o.toUpperCase()),
-      datasets: algs.map((alg, idx) => ({
-        label: alg,
-        data: ops.map(op => {
-          const match = keyOps.find(r => r.operation === op && r.algorithm === alg);
-          return match ? parseFloat(match.mean_us) : 0;
-        }),
-        backgroundColor: colors[idx % colors.length],
-        borderRadius: 4
-      }))
-    };
-  }, [benchmarksData.e1_primitive_benchmarks]);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       minHeight: '100vh',
@@ -786,13 +990,7 @@ function App() {
     style: {
       display: 'flex',
       alignItems: 'center',
-      gap: 16
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 12
+      gap: 14
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -831,7 +1029,7 @@ function App() {
       border: '1px solid #bbf7d0',
       fontWeight: 600
     }
-  }, "Clinical Biochip Security Console")), /*#__PURE__*/React.createElement("div", {
+  }, "Hospital Lab & Biochip Security Console")), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: '0.78rem',
       color: '#64748b',
@@ -840,7 +1038,7 @@ function App() {
       gap: 12,
       marginTop: 2
     }
-  }, /*#__PURE__*/React.createElement("span", null, "KEM: ", /*#__PURE__*/React.createElement("strong", {
+  }, /*#__PURE__*/React.createElement("span", null, "NIST FIPS 203: ", /*#__PURE__*/React.createElement("strong", {
     style: {
       color: '#0f172a'
     }
@@ -848,7 +1046,7 @@ function App() {
     style: {
       color: '#cbd5e1'
     }
-  }, "\u2022"), /*#__PURE__*/React.createElement("span", null, "Signature: ", /*#__PURE__*/React.createElement("strong", {
+  }, "\u2022"), /*#__PURE__*/React.createElement("span", null, "FIPS 204: ", /*#__PURE__*/React.createElement("strong", {
     style: {
       color: '#0f172a'
     }
@@ -860,15 +1058,7 @@ function App() {
     style: {
       color: '#0f172a'
     }
-  }, "AES-256-GCM")), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: '#cbd5e1'
-    }
-  }, "\u2022"), /*#__PURE__*/React.createElement("span", null, "Key Lifetime: ", /*#__PURE__*/React.createElement("strong", {
-    style: {
-      color: '#0f172a'
-    }
-  }, info.session_lifetime_s || 60, "s")))))), /*#__PURE__*/React.createElement("div", {
+  }, "AES-256-GCM"))))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -895,7 +1085,7 @@ function App() {
       borderRadius: '50%',
       backgroundColor: backendOnline ? '#16a34a' : '#dc2626'
     }
-  }), backendOnline ? 'System Online' : 'Offline'), /*#__PURE__*/React.createElement("div", {
+  }), backendOnline ? 'Hospital Gateway Online' : 'Gateway Offline'), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -923,9 +1113,7 @@ function App() {
     value: 5
   }, "Every 5s"), /*#__PURE__*/React.createElement("option", {
     value: 10
-  }, "Every 10s"), /*#__PURE__*/React.createElement("option", {
-    value: 30
-  }, "Every 30s"))), /*#__PURE__*/React.createElement("button", {
+  }, "Every 10s"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => fetchAllData(true),
     disabled: refreshing,
     className: "btn-secondary",
@@ -934,23 +1122,33 @@ function App() {
     size: 14,
     className: refreshing ? 'live-pulse' : ''
   }), refreshing ? 'Updating...' : 'Refresh'), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setEnvModalOpen(true),
+    onClick: () => {
+      setProvisionModalOpen(true);
+      setProvisionResult(null);
+      setProvisionError(null);
+    },
+    className: "btn-primary"
+  }, /*#__PURE__*/React.createElement(Icons.plus, {
+    size: 14
+  }), "Enrol Biochip"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setDiagnosticsModalOpen(true),
     style: {
       display: 'inline-flex',
       alignItems: 'center',
       gap: 6,
       padding: '8px 12px',
       borderRadius: 6,
-      backgroundColor: '#f0fdf4',
-      color: '#15803d',
-      border: '1px solid #bbf7d0',
+      backgroundColor: '#ffffff',
+      color: '#475569',
+      border: '1px solid #cbd5e1',
       fontSize: '0.82rem',
       fontWeight: 600,
       cursor: 'pointer'
-    }
+    },
+    title: "System Diagnostics & Low-Level Specs"
   }, /*#__PURE__*/React.createElement(Icons.cpu, {
     size: 14
-  }), "System Specs"))), /*#__PURE__*/React.createElement("div", {
+  }), "Diagnostics"))), /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 1400,
       margin: '0 auto',
@@ -960,34 +1158,44 @@ function App() {
       overflowX: 'auto'
     }
   }, [{
+    id: 'simulator',
+    label: 'Biochip Physical Simulator',
+    icon: Icons.microscope
+  }, {
+    id: 'attack_lab',
+    label: 'Cyber-Physical Threat Sandbox',
+    icon: Icons.crosshair
+  }, {
     id: 'devices',
-    label: 'Registered Devices',
+    label: 'Clinical Biochip Fleet',
     icon: Icons.device,
     count: devicesData.total
   }, {
     id: 'sessions',
-    label: 'Session Keys',
+    label: 'Active Cryptographic Sessions',
     icon: Icons.key,
     count: sessionsData.total
   }, {
     id: 'audit',
-    label: 'Tamper-Evident Audit',
+    label: 'Regulatory Compliance Audit',
     icon: Icons.fileText,
     count: auditData.events ? auditData.events.length : 0
   }, {
-    id: 'benchmarks',
-    label: 'Benchmarks & Evaluation',
-    icon: Icons.chart
-  }, {
-    id: 'security',
-    label: 'Security & CRL',
-    icon: Icons.shield
+    id: 'revocations',
+    label: 'Revocation & Quarantine (CRL)',
+    icon: Icons.ban,
+    count: securityData.crl?.device_ids ? securityData.crl.device_ids.length : 0
   }].map(tab => {
     const IconCmp = tab.icon;
     const active = activeTab === tab.id;
     return /*#__PURE__*/React.createElement("button", {
       key: tab.id,
-      onClick: () => setActiveTab(tab.id),
+      onClick: () => {
+        setActiveTab(tab.id);
+        if (tab.id === 'attack_lab' && attackTab === 'quantum') {
+          handleFetchQuantumThreat();
+        }
+      },
       style: {
         display: 'flex',
         alignItems: 'center',
@@ -1023,7 +1231,868 @@ function App() {
       flex: 1,
       width: '100%'
     }
-  }, activeTab === 'devices' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, activeTab === 'simulator' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+      gap: 24,
+      alignItems: 'start'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "surface-card",
+    style: {
+      padding: 22
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: '1.05rem',
+      fontWeight: 700,
+      color: '#0f172a'
+    }
+  }, "2D EWOD Electrode Array (8 \xD7 8 Cells)"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '0.78rem',
+      color: '#64748b'
+    }
+  }, "Device: ", /*#__PURE__*/React.createElement("span", {
+    className: "font-mono",
+    style: {
+      color: '#15803d',
+      fontWeight: 600
+    }
+  }, simData?.device_id || 'DMFB-01'), " \u2022 Electrowetting on Dielectric Physical Microfluidics")), /*#__PURE__*/React.createElement(Badge, {
+    status: simData?.status || 'IDLE'
+  })), /*#__PURE__*/React.createElement(BiochipGridComponent, {
+    simData: simData
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 20
+    }
+  }, /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: '0.85rem',
+      fontWeight: 600,
+      color: '#334155',
+      marginBottom: 8
+    }
+  }, "Active Droplets on Substrate"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      overflowX: 'auto',
+      border: '1px solid #e2e8f0',
+      borderRadius: 6
+    }
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "custom-table",
+    style: {
+      fontSize: '0.78rem'
+    }
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Droplet"), /*#__PURE__*/React.createElement("th", null, "Type"), /*#__PURE__*/React.createElement("th", null, "Pos (X, Y)"), /*#__PURE__*/React.createElement("th", null, "Volume"), /*#__PURE__*/React.createElement("th", null, "Concentration"))), /*#__PURE__*/React.createElement("tbody", null, (simData?.droplets || []).map(d => /*#__PURE__*/React.createElement("tr", {
+    key: d.id
+  }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 10,
+      height: 10,
+      borderRadius: '50%',
+      backgroundColor: d.color
+    }
+  }), /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: '#0f172a'
+    }
+  }, d.label))), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#64748b',
+      textTransform: 'capitalize'
+    }
+  }, d.droplet_type)), /*#__PURE__*/React.createElement("td", {
+    className: "font-mono"
+  }, "(", d.x, ", ", d.y, ")"), /*#__PURE__*/React.createElement("td", {
+    className: "font-mono"
+  }, d.volume_ul, " \xB5L"), /*#__PURE__*/React.createElement("td", {
+    className: "font-mono",
+    style: {
+      fontWeight: 600,
+      color: d.concentration_mg_dl > 0 ? '#15803d' : '#64748b'
+    }
+  }, d.concentration_mg_dl > 0 ? `${d.concentration_mg_dl} mg/dL` : '—'))), !simData?.droplets?.length && /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
+    colSpan: 5,
+    style: {
+      textAlign: 'center',
+      padding: 16,
+      color: '#94a3b8'
+    }
+  }, "No droplets currently on biochip. Click \"Load Assay Protocol\" to dispense."))))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "surface-card",
+    style: {
+      padding: 22
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: '1.05rem',
+      fontWeight: 700,
+      color: '#0f172a',
+      marginBottom: 4
+    }
+  }, "Clinical Assay Protocol Execution"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '0.8rem',
+      color: '#64748b',
+      marginBottom: 18
+    }
+  }, "Enzymatic Glucose Oxidase (GOx) bioassay with in-situ optical detection."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#f8fafc',
+      padding: 14,
+      borderRadius: 8,
+      border: '1px solid #e2e8f0',
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      color: '#334155'
+    }
+  }, "Patient Blood Glucose:"), /*#__PURE__*/React.createElement("span", {
+    className: "font-mono",
+    style: {
+      fontSize: '1.1rem',
+      fontWeight: 700,
+      color: patientGlucoseInput >= 200 ? '#b91c1c' : patientGlucoseInput < 70 ? '#b45309' : '#15803d'
+    }
+  }, patientGlucoseInput, " mg/dL")), /*#__PURE__*/React.createElement("input", {
+    type: "range",
+    min: "40",
+    max: "450",
+    step: "5",
+    value: patientGlucoseInput,
+    onChange: e => setPatientGlucoseInput(Number(e.target.value)),
+    className: "slider-input"
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      fontSize: '0.72rem',
+      color: '#64748b',
+      marginTop: 6
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "40 (Hypo)"), /*#__PURE__*/React.createElement("span", null, "70\u2013140 (Normal)"), /*#__PURE__*/React.createElement("span", null, "200+ (Hyperglycemia)"), /*#__PURE__*/React.createElement("span", null, "450 mg/dL"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 10,
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => handleLoadAssay(patientGlucoseInput),
+    disabled: simLoading,
+    className: "btn-secondary",
+    style: {
+      padding: '9px 14px'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.refresh, {
+    size: 15
+  }), "Reset & Reload Protocol"), /*#__PURE__*/React.createElement("button", {
+    onClick: handleStepSimulator,
+    disabled: simLoading || (simData?.current_step_idx || 0) >= (simData?.total_steps || 7),
+    className: "btn-secondary",
+    style: {
+      padding: '9px 14px',
+      borderColor: '#15803d',
+      color: '#15803d',
+      fontWeight: 700
+    }
+  }, /*#__PURE__*/React.createElement(Icons.play, {
+    size: 15
+  }), "Next Step \u25B6")), /*#__PURE__*/React.createElement("button", {
+    onClick: handleRunAllSimulator,
+    disabled: simLoading || (simData?.current_step_idx || 0) >= (simData?.total_steps || 7),
+    className: "btn-primary",
+    style: {
+      width: '100%',
+      padding: '10px 14px',
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement(Icons.fastForward, {
+    size: 16
+  }), "Run Complete Assay To Photodiode Readout \u23E9"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      fontSize: '0.78rem',
+      color: '#334155',
+      marginBottom: 6
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 600
+    }
+  }, "Protocol Progress:"), /*#__PURE__*/React.createElement("span", {
+    className: "font-mono"
+  }, "Step ", simData?.current_step_idx || 0, " of ", simData?.total_steps || 7)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: '100%',
+      height: 8,
+      backgroundColor: '#e2e8f0',
+      borderRadius: 4,
+      overflow: 'hidden'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: `${(simData?.current_step_idx || 0) / (simData?.total_steps || 7) * 100}%`,
+      height: '100%',
+      backgroundColor: '#15803d',
+      transition: 'width 0.3s ease'
+    }
+  }))), simData?.current_step_info && /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#f0fdf4',
+      border: '1px solid #bbf7d0',
+      borderRadius: 6,
+      padding: '12px 14px',
+      fontSize: '0.8rem',
+      color: '#166534'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      marginBottom: 2
+    }
+  }, "Step ", simData.current_step_info.step_num, " (", simData.current_step_info.operation, "):"), /*#__PURE__*/React.createElement("div", null, simData.current_step_info.description)), !simData?.current_step_info && /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#f8fafc',
+      border: '1px solid #e2e8f0',
+      borderRadius: 6,
+      padding: '12px 14px',
+      fontSize: '0.8rem',
+      color: '#64748b'
+    }
+  }, "Protocol ready. Click ", /*#__PURE__*/React.createElement("strong", null, "\"Next Step\""), " to initiate droplet dispensing and electrowetting actuation.")), /*#__PURE__*/React.createElement("div", {
+    className: "surface-card",
+    style: {
+      padding: 22,
+      borderLeft: simData?.sensor_data?.detected ? '4px solid #15803d' : '4px solid #cbd5e1'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement(Icons.microscope, {
+    size: 20,
+    style: {
+      color: '#15803d'
+    }
+  }), /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: '0.98rem',
+      fontWeight: 700,
+      color: '#0f172a'
+    }
+  }, "Optical Biosensor Readout Site (3, 6)")), simData?.sensor_data?.detected ? /*#__PURE__*/React.createElement(Badge, {
+    status: "VALID",
+    label: "ASSAY DETECTED"
+  }) : /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '0.74rem',
+      color: '#94a3b8',
+      fontStyle: 'italic'
+    }
+  }, "Awaiting droplet at detector")), simData?.sensor_data?.detected ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 12,
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#f8fafc',
+      padding: 12,
+      borderRadius: 6,
+      border: '1px solid #e2e8f0'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.72rem',
+      color: '#64748b',
+      textTransform: 'uppercase',
+      fontWeight: 600
+    }
+  }, "Optical Absorbance"), /*#__PURE__*/React.createElement("div", {
+    className: "font-mono",
+    style: {
+      fontSize: '1.4rem',
+      fontWeight: 700,
+      color: '#0f172a',
+      marginTop: 2
+    }
+  }, simData.sensor_data.absorbance_au, " AU")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#f8fafc',
+      padding: 12,
+      borderRadius: 6,
+      border: '1px solid #e2e8f0'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.72rem',
+      color: '#64748b',
+      textTransform: 'uppercase',
+      fontWeight: 600
+    }
+  }, "Quantified Glucose"), /*#__PURE__*/React.createElement("div", {
+    className: "font-mono",
+    style: {
+      fontSize: '1.4rem',
+      fontWeight: 700,
+      color: '#15803d',
+      marginTop: 2
+    }
+  }, simData.sensor_data.glucose_mg_dl, " mg/dL"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#f0fdf4',
+      padding: '10px 14px',
+      borderRadius: 6,
+      border: '1px solid #bbf7d0',
+      fontSize: '0.8rem',
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#64748b'
+    }
+  }, "Clinical Evaluation: "), /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: simData.sensor_data.clinical_status.includes('CRITICAL') ? '#b91c1c' : '#15803d'
+    }
+  }, simData.sensor_data.clinical_status)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#f8fafc',
+      padding: '10px 12px',
+      borderRadius: 6,
+      border: '1px solid #e2e8f0',
+      fontSize: '0.75rem',
+      color: '#475569'
+    }
+  }, "\uD83D\uDD12 ", /*#__PURE__*/React.createElement("strong", null, "Automatic PQC Packaging:"), " This optical diagnostic telemetry is automatically signed with ", /*#__PURE__*/React.createElement("strong", null, "ML-DSA-65"), " and encapsulated via ", /*#__PURE__*/React.createElement("strong", null, "ML-KEM-768"), " with an authenticated ", /*#__PURE__*/React.createElement("strong", null, "AES-256-GCM"), " payload before wireless dispatch.")) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '24px 16px',
+      textAlign: 'center',
+      color: '#94a3b8',
+      fontSize: '0.82rem',
+      backgroundColor: '#f8fafc',
+      borderRadius: 6,
+      border: '1px dashed #e2e8f0'
+    }
+  }, "Photodiode optical absorbance sensor is currently clear.", /*#__PURE__*/React.createElement("br", null), "Advance actuation steps to position the reacted assay droplet under electrode (3, 6)."))))), activeTab === 'attack_lab' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: '1.2rem',
+      fontWeight: 700,
+      color: '#0f172a'
+    }
+  }, "Cyber-Physical Attack Sandbox & Adversary Mitigation"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '0.82rem',
+      color: '#64748b',
+      marginTop: 4
+    }
+  }, "Simulate published cyber-physical attack vectors from biomedical microfluidic literature (Ali et al., Guo et al.) and inspect how PQ-KMS prevents clinical harm.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 8,
+      marginBottom: 20,
+      borderBottom: '1px solid #e2e8f0',
+      paddingBottom: 10
+    }
+  }, [{
+    id: 'tamper',
+    label: '1. Glucose Assay Tampering (Ali et al.)',
+    desc: 'In-transit packet modification'
+  }, {
+    id: 'replay',
+    label: '2. Diagnostic Reading Replay (Guo et al.)',
+    desc: 'Stale telemetry injection'
+  }, {
+    id: 'quantum',
+    label: '3. Harvest-Now Decrypt-Later',
+    desc: 'Shor algorithm vulnerability'
+  }].map(s => /*#__PURE__*/React.createElement("button", {
+    key: s.id,
+    onClick: () => {
+      setAttackTab(s.id);
+      if (s.id === 'quantum') handleFetchQuantumThreat();
+    },
+    style: {
+      padding: '8px 16px',
+      borderRadius: 6,
+      border: '1px solid',
+      borderColor: attackTab === s.id ? '#15803d' : '#cbd5e1',
+      backgroundColor: attackTab === s.id ? '#f0fdf4' : '#ffffff',
+      color: attackTab === s.id ? '#15803d' : '#475569',
+      fontSize: '0.82rem',
+      fontWeight: attackTab === s.id ? 700 : 500,
+      cursor: 'pointer',
+      transition: 'all 0.15s ease'
+    }
+  }, s.label))), attackTab === 'tamper' && /*#__PURE__*/React.createElement("div", {
+    className: "surface-card",
+    style: {
+      padding: 24
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 18
+    }
+  }, /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: '1rem',
+      fontWeight: 700,
+      color: '#0f172a'
+    }
+  }, "Scenario 1: In-Transit Medical Assay Result Manipulation"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '0.82rem',
+      color: '#475569',
+      marginTop: 4,
+      lineHeight: 1.5
+    }
+  }, "Ali et al. demonstrated that adversaries intercepting biochip telemetry can flip critical glucose readings (e.g. 220 mg/dL hyperglycemic crisis altered to 110 mg/dL normal) to trick the clinician into withholding insulin therapy.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+      gap: 16,
+      marginBottom: 20,
+      backgroundColor: '#f8fafc',
+      padding: 16,
+      borderRadius: 8,
+      border: '1px solid #e2e8f0'
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: 'block',
+      fontSize: '0.78rem',
+      fontWeight: 600,
+      color: '#334155',
+      marginBottom: 6
+    }
+  }, "True Physical Sensor Reading (mg/dL):"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    value: tamperTrueGlucose,
+    onChange: e => setTamperTrueGlucose(e.target.value),
+    className: "form-input font-mono"
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '0.72rem',
+      color: '#b91c1c',
+      marginTop: 4,
+      display: 'block'
+    }
+  }, "Actual patient state: Severe Hyperglycemia")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: 'block',
+      fontSize: '0.78rem',
+      fontWeight: 600,
+      color: '#334155',
+      marginBottom: 6
+    }
+  }, "Adversary Injected Falsified Value (mg/dL):"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    value: tamperInjectedGlucose,
+    onChange: e => setTamperInjectedGlucose(e.target.value),
+    className: "form-input font-mono"
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '0.72rem',
+      color: '#64748b',
+      marginTop: 4,
+      display: 'block'
+    }
+  }, "Attacker goal: Mask danger as normal fasting (110 mg/dL)"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 24
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: handleRunTamperAttack,
+    disabled: tamperLoading,
+    className: "btn-primary",
+    style: {
+      padding: '10px 20px',
+      backgroundColor: '#dc2626',
+      borderColor: '#b91c1c'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.crosshair, {
+    size: 16
+  }), tamperLoading ? 'Executing In-Transit Attack Simulation...' : 'Launch In-Transit Attack Simulation')), tamperResult && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      border: '1px solid #fecaca',
+      backgroundColor: '#fef2f2',
+      borderRadius: 8,
+      padding: 18
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("h4", {
+    style: {
+      fontSize: '0.92rem',
+      fontWeight: 700,
+      color: '#b91c1c'
+    }
+  }, "\u274C Legacy Unprotected Biochip (Yao et al. / CRC)"), /*#__PURE__*/React.createElement(Badge, {
+    status: "VULNERABLE",
+    label: "ATTACK SUCCEEDED"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.82rem',
+      color: '#7f1d1d',
+      lineHeight: 1.6
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Hospital Server Received:"), ' ', /*#__PURE__*/React.createElement("span", {
+    className: "font-mono",
+    style: {
+      fontWeight: 700,
+      color: '#b91c1c'
+    }
+  }, tamperResult.unprotected_system.received_glucose, " mg/dL")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Integrity Check:"), " None (passed weak CRC-32 / unauthenticated ciphertext)."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#ffffff',
+      border: '1px solid #fca5a5',
+      padding: 10,
+      borderRadius: 6,
+      color: '#991b1b',
+      fontWeight: 500
+    }
+  }, "\u26A0\uFE0F ", /*#__PURE__*/React.createElement("strong", null, "Fatal Clinical Impact:"), " ", tamperResult.unprotected_system.clinical_consequence))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      border: '1px solid #bbf7d0',
+      backgroundColor: '#f0fdf4',
+      borderRadius: 8,
+      padding: 18
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("h4", {
+    style: {
+      fontSize: '0.92rem',
+      fontWeight: 700,
+      color: '#15803d'
+    }
+  }, "\uD83D\uDEE1\uFE0F With PQ-KMS Authenticated Encryption"), /*#__PURE__*/React.createElement(Badge, {
+    status: "PROTECTED",
+    label: "ATTACK BLOCKED"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.82rem',
+      color: '#166534',
+      lineHeight: 1.6
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Cryptographic Defense:"), " AES-256-GCM AEAD Tag Verification"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Error Detail:"), " ", /*#__PURE__*/React.createElement("span", {
+    className: "font-mono",
+    style: {
+      color: '#0f172a'
+    }
+  }, tamperResult.pqkms_system.error_detail)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#ffffff',
+      border: '1px solid #86efac',
+      padding: 10,
+      borderRadius: 6,
+      color: '#15803d',
+      fontWeight: 500
+    }
+  }, "\u2713 ", /*#__PURE__*/React.createElement("strong", null, "Patient Safe:"), " ", tamperResult.pqkms_system.clinical_consequence))))), attackTab === 'replay' && /*#__PURE__*/React.createElement("div", {
+    className: "surface-card",
+    style: {
+      padding: 24
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 18
+    }
+  }, /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: '1rem',
+      fontWeight: 700,
+      color: '#0f172a'
+    }
+  }, "Scenario 2: Diagnostic Message Replay Attack"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '0.82rem',
+      color: '#475569',
+      marginTop: 4,
+      lineHeight: 1.5
+    }
+  }, "Guo et al. highlighted that an attacker eavesdropping on biochip transmissions can record a valid reading from days earlier (when patient vitals were normal) and replay it when the patient enters a critical state.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: handleRunReplayAttack,
+    disabled: replayLoading,
+    className: "btn-primary",
+    style: {
+      padding: '10px 20px',
+      backgroundColor: '#dc2626',
+      borderColor: '#b91c1c'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.crosshair, {
+    size: 16
+  }), replayLoading ? 'Simulating Replay Injection...' : 'Execute Replay Attack Simulation')), replayResult && /*#__PURE__*/React.createElement("div", {
+    style: {
+      border: '1px solid #bbf7d0',
+      backgroundColor: '#f0fdf4',
+      borderRadius: 8,
+      padding: 18
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("h4", {
+    style: {
+      fontSize: '0.92rem',
+      fontWeight: 700,
+      color: '#15803d'
+    }
+  }, "\uD83D\uDEE1\uFE0F PQ-KMS Anti-Replay Defense Verified"), /*#__PURE__*/React.createElement(Badge, {
+    status: "PROTECTED",
+    label: "REPLAY REJECTED"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.82rem',
+      color: '#166534',
+      lineHeight: 1.6
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 6
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Replay Detected:"), " ", replayResult.replay_detected ? 'TRUE (Packet dropped immediately)' : 'FALSE'), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 6
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Rejection Reason:"), " ", /*#__PURE__*/React.createElement("code", {
+    style: {
+      backgroundColor: '#ffffff',
+      padding: '2px 6px',
+      borderRadius: 4
+    }
+  }, replayResult.rejection_reason)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Security Mitigation:"), " ", replayResult.mitigation), /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#ffffff',
+      border: '1px solid #86efac',
+      padding: 10,
+      borderRadius: 6,
+      color: '#15803d'
+    }
+  }, "\u2713 ", /*#__PURE__*/React.createElement("strong", null, "Audit Action:"), " Security event ", /*#__PURE__*/React.createElement("code", null, "REPLAY_ATTACK_BLOCKED"), " automatically recorded into immutable hash-chained audit log.")))), attackTab === 'quantum' && /*#__PURE__*/React.createElement("div", {
+    className: "surface-card",
+    style: {
+      padding: 24
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 18
+    }
+  }, /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: '1rem',
+      fontWeight: 700,
+      color: '#0f172a'
+    }
+  }, "Scenario 3: \"Harvest-Now, Decrypt-Later\" Quantum Threat Analysis"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '0.82rem',
+      color: '#475569',
+      marginTop: 4,
+      lineHeight: 1.5
+    }
+  }, "Adversaries intercept and archive encrypted clinical data today. When a fault-tolerant quantum computer is deployed, all classical public-key cryptography (RSA, ECDH, ECDSA) will be broken via Shor's algorithm.")), quantumResult ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      border: '1px solid #fecaca',
+      backgroundColor: '#fef2f2',
+      borderRadius: 8,
+      padding: 18
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("h4", {
+    style: {
+      fontSize: '0.92rem',
+      fontWeight: 700,
+      color: '#b91c1c'
+    }
+  }, "Classical Baseline (ECDH / RSA)"), /*#__PURE__*/React.createElement(Badge, {
+    status: "FAIL",
+    label: "0 BITS QUANTUM"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.82rem',
+      color: '#7f1d1d',
+      lineHeight: 1.6
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Quantum Security:"), " ", quantumResult.classical_quantum_security), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Shor Algorithm Complexity:"), " Polynomial time ", quantumResult.shor_complexity), /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#ffffff',
+      border: '1px solid #fca5a5',
+      padding: 10,
+      borderRadius: 6,
+      color: '#991b1b'
+    }
+  }, "\u26A0\uFE0F ", /*#__PURE__*/React.createElement("strong", null, "Vulnerability:"), " All medical data recorded today will be completely exposed when quantum computers arrive."))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      border: '1px solid #bbf7d0',
+      backgroundColor: '#f0fdf4',
+      borderRadius: 8,
+      padding: 18
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("h4", {
+    style: {
+      fontSize: '0.92rem',
+      fontWeight: 700,
+      color: '#15803d'
+    }
+  }, "PQ-KMS (ML-KEM-768 / ML-DSA-65)"), /*#__PURE__*/React.createElement(Badge, {
+    status: "PASS",
+    label: "CATEGORY 3 QUANTUM"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.82rem',
+      color: '#166534',
+      lineHeight: 1.6
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Quantum Security Margin:"), " ", quantumResult.pqc_quantum_security), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Lattice Hardness:"), " ", quantumResult.lattice_hardness), /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#ffffff',
+      border: '1px solid #86efac',
+      padding: 10,
+      borderRadius: 6,
+      color: '#15803d'
+    }
+  }, "\u2713 ", /*#__PURE__*/React.createElement("strong", null, "Harvest Resistance:"), " ", quantumResult.harvest_now_decrypt_later_status)))) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'center',
+      padding: 20
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: handleFetchQuantumThreat,
+    className: "btn-secondary"
+  }, "Fetch Quantum Cryptanalytic Model Comparison")))), activeTab === 'devices' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -1044,7 +2113,7 @@ function App() {
       textTransform: 'uppercase',
       letterSpacing: '0.04em'
     }
-  }, "Total Registered Devices"), /*#__PURE__*/React.createElement("div", {
+  }, "Total Biochip Fleet"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: '1.85rem',
       fontWeight: 700,
@@ -1057,7 +2126,7 @@ function App() {
       fontSize: '0.75rem',
       marginTop: 4
     }
-  }, "Managed in SQLite Registry")), /*#__PURE__*/React.createElement("div", {
+  }, "Registered Clinical Nodes")), /*#__PURE__*/React.createElement("div", {
     className: "surface-card",
     style: {
       padding: 18,
@@ -1071,7 +2140,7 @@ function App() {
       textTransform: 'uppercase',
       letterSpacing: '0.04em'
     }
-  }, "Authorized Active"), /*#__PURE__*/React.createElement("div", {
+  }, "In-Service Authorized"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: '1.85rem',
       fontWeight: 700,
@@ -1084,7 +2153,7 @@ function App() {
       fontSize: '0.75rem',
       marginTop: 4
     }
-  }, "ML-DSA Proof-of-Possession Valid")), /*#__PURE__*/React.createElement("div", {
+  }, "ML-DSA Proof Validated")), /*#__PURE__*/React.createElement("div", {
     className: "surface-card",
     style: {
       padding: 18,
@@ -1098,7 +2167,7 @@ function App() {
       textTransform: 'uppercase',
       letterSpacing: '0.04em'
     }
-  }, "Revoked Devices"), /*#__PURE__*/React.createElement("div", {
+  }, "Quarantined / Revoked"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: '1.85rem',
       fontWeight: 700,
@@ -1111,7 +2180,7 @@ function App() {
       fontSize: '0.75rem',
       marginTop: 4
     }
-  }, "Listed in Signed CRL")), /*#__PURE__*/React.createElement("div", {
+  }, "Published in Signed CRL")), /*#__PURE__*/React.createElement("div", {
     className: "surface-card",
     style: {
       padding: 18,
@@ -1125,7 +2194,7 @@ function App() {
       textTransform: 'uppercase',
       letterSpacing: '0.04em'
     }
-  }, "Pending / Inactive"), /*#__PURE__*/React.createElement("div", {
+  }, "Pending Activation"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: '1.85rem',
       fontWeight: 700,
@@ -1138,88 +2207,7 @@ function App() {
       fontSize: '0.75rem',
       marginTop: 4
     }
-  }, "Awaiting key registration"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-      gap: 20,
-      marginBottom: 20
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "surface-card",
-    style: {
-      padding: 20
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: '0.92rem',
-      fontWeight: 600,
-      color: '#0f172a',
-      marginBottom: 16
-    }
-  }, "Device Status Distribution"), /*#__PURE__*/React.createElement(ChartCanvas, {
-    type: "doughnut",
-    data: deviceChartData,
-    options: {
-      plugins: {
-        legend: {
-          position: 'right'
-        }
-      }
-    },
-    height: 200
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "surface-card",
-    style: {
-      padding: 20,
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
-      marginBottom: 10
-    }
-  }, /*#__PURE__*/React.createElement(Icons.lock, {
-    size: 18,
-    style: {
-      color: '#15803d'
-    }
-  }), /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: '0.92rem',
-      fontWeight: 600,
-      color: '#0f172a'
-    }
-  }, "Post-Quantum Identity Binding")), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: '0.82rem',
-      color: '#475569',
-      lineHeight: 1.6,
-      marginBottom: 14
-    }
-  }, "Each registered biochip node holds an ", /*#__PURE__*/React.createElement("strong", null, "ML-KEM-768"), " public key (1,184 bytes) and an ", /*#__PURE__*/React.createElement("strong", null, "ML-DSA-65"), " verification key (1,952 bytes). All device registrations enforce Algorithm 1 proof-of-possession signatures before binding into the registry."), /*#__PURE__*/React.createElement("div", {
-    style: {
-      backgroundColor: '#f0fdf4',
-      padding: '12px 14px',
-      borderRadius: 6,
-      border: '1px solid #bbf7d0',
-      fontSize: '0.78rem',
-      color: '#166534',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement(Icons.checkCircle, {
-    size: 16,
-    style: {
-      color: '#15803d',
-      flexShrink: 0
-    }
-  }), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, "Zero Key Leakage:"), " Private key material never leaves device hardware. Only public keys and cryptographic proofs are verified.")))), /*#__PURE__*/React.createElement("div", {
+  }, "Enrolment Code Issued"))), /*#__PURE__*/React.createElement("div", {
     className: "surface-card",
     style: {
       padding: '14px 18px',
@@ -1254,7 +2242,7 @@ function App() {
     }
   }), /*#__PURE__*/React.createElement("input", {
     type: "text",
-    placeholder: "Search by Device ID or Role...",
+    placeholder: "Search Biochip ID or Station Role...",
     value: deviceSearch,
     onChange: e => {
       setDeviceSearch(e.target.value);
@@ -1284,8 +2272,7 @@ function App() {
       color: deviceStatusFilter === st ? '#ffffff' : '#475569',
       fontSize: '0.78rem',
       fontWeight: 600,
-      cursor: 'pointer',
-      transition: 'all 0.15s ease'
+      cursor: 'pointer'
     }
   }, st)))), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1302,12 +2289,12 @@ function App() {
     className: "btn-primary"
   }, /*#__PURE__*/React.createElement(Icons.plus, {
     size: 14
-  }), "Provision Biochip Node"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => exportToCsv('devices_registry', filteredDevices),
+  }), "Enrol Biochip"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => exportToCsv('clinical_biochips_inventory', filteredDevices),
     className: "btn-secondary"
   }, /*#__PURE__*/React.createElement(Icons.download, {
     size: 14
-  }), "Export CSV (", filteredDevices.length, ")"))), /*#__PURE__*/React.createElement("div", {
+  }), "Export Inventory"))), /*#__PURE__*/React.createElement("div", {
     className: "surface-card",
     style: {
       overflow: 'hidden'
@@ -1319,7 +2306,11 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement("table", {
     className: "custom-table"
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Device ID"), /*#__PURE__*/React.createElement("th", null, "Assigned Medical Role"), /*#__PURE__*/React.createElement("th", null, "Status"), /*#__PURE__*/React.createElement("th", null, "Registration Date"), /*#__PURE__*/React.createElement("th", null, "Last Seen"))), /*#__PURE__*/React.createElement("tbody", null, filteredDevices.slice((devicePage - 1) * pageSize, devicePage * pageSize).map(dev => /*#__PURE__*/React.createElement("tr", {
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Biochip Device ID"), /*#__PURE__*/React.createElement("th", null, "Assigned Clinical Station"), /*#__PURE__*/React.createElement("th", null, "Status"), /*#__PURE__*/React.createElement("th", null, "Enrolment Date"), /*#__PURE__*/React.createElement("th", null, "Last Operational Ping"), /*#__PURE__*/React.createElement("th", {
+    style: {
+      textAlign: 'right'
+    }
+  }, "Actions"))), /*#__PURE__*/React.createElement("tbody", null, filteredDevices.slice((devicePage - 1) * pageSize, devicePage * pageSize).map(dev => /*#__PURE__*/React.createElement("tr", {
     key: dev.device_id
   }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
     className: "font-mono",
@@ -1346,14 +2337,40 @@ function App() {
       fontSize: '0.78rem',
       color: '#64748b'
     }
-  }, dev.last_seen || '—'))), !filteredDevices.length && /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
-    colSpan: 5,
+  }, dev.last_seen || '—'), /*#__PURE__*/React.createElement("td", {
+    style: {
+      textAlign: 'right'
+    }
+  }, dev.status === 'AUTHORIZED' ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setDeviceToRevoke(dev.device_id);
+      setRevokeResult(null);
+      setRevokeError(null);
+      setRevokeModalOpen(true);
+    },
+    style: {
+      padding: '4px 10px',
+      borderRadius: 4,
+      backgroundColor: '#ffffff',
+      border: '1px solid #fca5a5',
+      color: '#b91c1c',
+      fontSize: '0.75rem',
+      fontWeight: 600,
+      cursor: 'pointer'
+    }
+  }, "Quarantine Node") : /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: '0.75rem',
+      color: '#94a3b8'
+    }
+  }, "Quarantined")))), !filteredDevices.length && /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
+    colSpan: 6,
     style: {
       textAlign: 'center',
       padding: 32,
       color: '#64748b'
     }
-  }, "No devices match the search criteria."))))), filteredDevices.length > pageSize && /*#__PURE__*/React.createElement("div", {
+  }, "No devices match current search filter."))))), filteredDevices.length > pageSize && /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -1367,7 +2384,7 @@ function App() {
       fontSize: '0.8rem',
       color: '#64748b'
     }
-  }, "Showing ", (devicePage - 1) * pageSize + 1, " to ", Math.min(devicePage * pageSize, filteredDevices.length), " of ", filteredDevices.length, " devices"), /*#__PURE__*/React.createElement("div", {
+  }, "Showing ", (devicePage - 1) * pageSize + 1, " to ", Math.min(devicePage * pageSize, filteredDevices.length), " of ", filteredDevices.length, " biochips"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       gap: 6
@@ -1443,7 +2460,7 @@ function App() {
       textTransform: 'uppercase',
       letterSpacing: '0.04em'
     }
-  }, "Active Keys"), /*#__PURE__*/React.createElement("div", {
+  }, "Active Encrypted Keys"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: '1.85rem',
       fontWeight: 700,
@@ -1456,7 +2473,7 @@ function App() {
       fontSize: '0.75rem',
       marginTop: 4
     }
-  }, "AES-256-GCM AEAD Encrypted")), /*#__PURE__*/React.createElement("div", {
+  }, "AES-256-GCM AEAD Live")), /*#__PURE__*/React.createElement("div", {
     className: "surface-card",
     style: {
       padding: 18,
@@ -1470,7 +2487,7 @@ function App() {
       textTransform: 'uppercase',
       letterSpacing: '0.04em'
     }
-  }, "Deactivated"), /*#__PURE__*/React.createElement("div", {
+  }, "Rotated / Deactivated"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: '1.85rem',
       fontWeight: 700,
@@ -1483,7 +2500,7 @@ function App() {
       fontSize: '0.75rem',
       marginTop: 4
     }
-  }, "Cryptoperiod Expired / Rotated")), /*#__PURE__*/React.createElement("div", {
+  }, "Cryptoperiod Expired")), /*#__PURE__*/React.createElement("div", {
     className: "surface-card",
     style: {
       padding: 18,
@@ -1497,7 +2514,7 @@ function App() {
       textTransform: 'uppercase',
       letterSpacing: '0.04em'
     }
-  }, "Destroyed Keys"), /*#__PURE__*/React.createElement("div", {
+  }, "Zeroized in Memory"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: '1.85rem',
       fontWeight: 700,
@@ -1510,88 +2527,7 @@ function App() {
       fontSize: '0.75rem',
       marginTop: 4
     }
-  }, "Memory Zeroized (Algorithm 4)"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-      gap: 20,
-      marginBottom: 20
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "surface-card",
-    style: {
-      padding: 20
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: '0.92rem',
-      fontWeight: 600,
-      color: '#0f172a',
-      marginBottom: 16
-    }
-  }, "Sessions by Lifecycle State"), /*#__PURE__*/React.createElement(ChartCanvas, {
-    type: "bar",
-    data: sessionChartData,
-    options: {
-      plugins: {
-        legend: {
-          display: false
-        }
-      }
-    },
-    height: 200
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "surface-card",
-    style: {
-      padding: 20,
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
-      marginBottom: 10
-    }
-  }, /*#__PURE__*/React.createElement(Icons.key, {
-    size: 18,
-    style: {
-      color: '#15803d'
-    }
-  }), /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: '0.92rem',
-      fontWeight: 600,
-      color: '#0f172a'
-    }
-  }, "Perfect Forward Secrecy & Ephemeral Security")), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: '0.82rem',
-      color: '#475569',
-      lineHeight: 1.6,
-      marginBottom: 14
-    }
-  }, "Each session establishes an independent 256-bit symmetric key derived via ", /*#__PURE__*/React.createElement("strong", null, "HKDF-SHA256"), " from an ML-KEM shared secret and fresh client nonce. Keys automatically expire after ", /*#__PURE__*/React.createElement("strong", null, info.session_lifetime_s || 60, " seconds"), " or 1,000 transmitted messages."), /*#__PURE__*/React.createElement("div", {
-    style: {
-      backgroundColor: '#f0fdf4',
-      padding: '12px 14px',
-      borderRadius: 6,
-      border: '1px solid #bbf7d0',
-      fontSize: '0.78rem',
-      color: '#166534',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement(Icons.checkCircle, {
-    size: 16,
-    style: {
-      color: '#15803d',
-      flexShrink: 0
-    }
-  }), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, "Zero Key Retention in Storage:"), " Symmetric keys reside strictly in volatile RAM. No key bytes are ever written to the SQLite database.")))), /*#__PURE__*/React.createElement("div", {
+  }, "RAM Overwritten (Algorithm 4)"))), /*#__PURE__*/React.createElement("div", {
     className: "surface-card",
     style: {
       padding: '14px 18px',
@@ -1656,11 +2592,10 @@ function App() {
       color: sessionStateFilter === st ? '#ffffff' : '#475569',
       fontSize: '0.78rem',
       fontWeight: 600,
-      cursor: 'pointer',
-      transition: 'all 0.15s ease'
+      cursor: 'pointer'
     }
   }, st)))), /*#__PURE__*/React.createElement("button", {
-    onClick: () => exportToCsv('sessions_lifecycle', filteredSessions),
+    onClick: () => exportToCsv('session_keys_lifecycle', filteredSessions),
     className: "btn-secondary"
   }, /*#__PURE__*/React.createElement(Icons.download, {
     size: 14
@@ -1676,7 +2611,7 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement("table", {
     className: "custom-table"
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Session ID"), /*#__PURE__*/React.createElement("th", null, "Device ID"), /*#__PURE__*/React.createElement("th", null, "Key ID"), /*#__PURE__*/React.createElement("th", null, "State"), /*#__PURE__*/React.createElement("th", null, "Created At"), /*#__PURE__*/React.createElement("th", null, "Expires At"), /*#__PURE__*/React.createElement("th", null, "Message Count"))), /*#__PURE__*/React.createElement("tbody", null, filteredSessions.slice((sessionPage - 1) * pageSize, sessionPage * pageSize).map(sess => /*#__PURE__*/React.createElement("tr", {
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Session ID"), /*#__PURE__*/React.createElement("th", null, "Device ID"), /*#__PURE__*/React.createElement("th", null, "Key ID"), /*#__PURE__*/React.createElement("th", null, "State"), /*#__PURE__*/React.createElement("th", null, "Created At"), /*#__PURE__*/React.createElement("th", null, "Expires At"), /*#__PURE__*/React.createElement("th", null, "Transmitted Messages"))), /*#__PURE__*/React.createElement("tbody", null, filteredSessions.slice((sessionPage - 1) * pageSize, sessionPage * pageSize).map(sess => /*#__PURE__*/React.createElement("tr", {
     key: sess.session_id
   }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
     className: "font-mono",
@@ -1722,14 +2657,14 @@ function App() {
       fontWeight: 600,
       color: '#0f172a'
     }
-  }, sess.message_count || 0)))), !filteredSessions.length && /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
+  }, sess.message_count || 0, " / 1000")))), !filteredSessions.length && /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
     colSpan: 7,
     style: {
       textAlign: 'center',
       padding: 32,
       color: '#64748b'
     }
-  }, "No sessions match the current criteria."))))), filteredSessions.length > pageSize && /*#__PURE__*/React.createElement("div", {
+  }, "No sessions match filter criteria."))))), filteredSessions.length > pageSize && /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -1811,13 +2746,13 @@ function App() {
       fontWeight: 700,
       color: auditData.chain_valid ? '#15803d' : '#b91c1c'
     }
-  }, auditData.chain_valid ? 'Cryptographic Hash Chain Integrity: VERIFIED' : `Hash Chain Broken at Block #${auditData.chain_break_index}`), /*#__PURE__*/React.createElement("div", {
+  }, auditData.chain_valid ? 'FDA 21 CFR Part 11 / Cryptographic Hash Chain: VERIFIED' : `Audit Integrity Corrupted at Block #${auditData.chain_break_index}`), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: '0.8rem',
       color: auditData.chain_valid ? '#166534' : '#991b1b',
       marginTop: 2
     }
-  }, "Every log record is sequentially chained via SHA-256: ", /*#__PURE__*/React.createElement("code", null, "H_i = H(H_", '{i-1}', " || payload_i)"), ". Any alteration causes immediate verification failure."))), /*#__PURE__*/React.createElement("div", {
+  }, "Sequential SHA-256 chain links: ", /*#__PURE__*/React.createElement("code", null, "H_i = H(H_", '{i-1}', " || payload_i)"), ". Tampering with any historical audit entry is immediately detected."))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -1842,134 +2777,11 @@ function App() {
       border: '1px solid #15803d',
       fontSize: '0.82rem',
       fontWeight: 600,
-      cursor: 'pointer',
-      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+      cursor: 'pointer'
     }
   }, /*#__PURE__*/React.createElement(Icons.refresh, {
     size: 14
   }), "Re-Verify Chain"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-      gap: 20,
-      marginBottom: 20
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "surface-card",
-    style: {
-      padding: 20
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: '0.92rem',
-      fontWeight: 600,
-      color: '#0f172a',
-      marginBottom: 16
-    }
-  }, "Audit Outcomes Distribution"), /*#__PURE__*/React.createElement(ChartCanvas, {
-    type: "doughnut",
-    data: auditChartData,
-    options: {
-      plugins: {
-        legend: {
-          position: 'right'
-        }
-      }
-    },
-    height: 180
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "surface-card",
-    style: {
-      padding: 20
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: '0.92rem',
-      fontWeight: 600,
-      color: '#0f172a',
-      marginBottom: 16
-    }
-  }, "Security Event Summary"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: 12,
-      marginTop: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      backgroundColor: '#f0fdf4',
-      padding: 14,
-      borderRadius: 6,
-      border: '1px solid #bbf7d0',
-      textAlign: 'center'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.72rem',
-      color: '#166534',
-      textTransform: 'uppercase',
-      fontWeight: 600
-    }
-  }, "Accepted"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.6rem',
-      fontWeight: 700,
-      color: '#15803d',
-      marginTop: 4
-    }
-  }, auditData.outcome_counts.ACCEPTED || 0)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      backgroundColor: '#fef2f2',
-      padding: 14,
-      borderRadius: 6,
-      border: '1px solid #fecaca',
-      textAlign: 'center'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.72rem',
-      color: '#991b1b',
-      textTransform: 'uppercase',
-      fontWeight: 600
-    }
-  }, "Rejected"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.6rem',
-      fontWeight: 700,
-      color: '#b91c1c',
-      marginTop: 4
-    }
-  }, auditData.outcome_counts.REJECTED || 0)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      backgroundColor: '#f0f9ff',
-      padding: 14,
-      borderRadius: 6,
-      border: '1px solid #bae6fd',
-      textAlign: 'center'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.72rem',
-      color: '#0369a1',
-      textTransform: 'uppercase',
-      fontWeight: 600
-    }
-  }, "System Info"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.6rem',
-      fontWeight: 700,
-      color: '#0284c7',
-      marginTop: 4
-    }
-  }, auditData.outcome_counts.INFO || 0))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 14,
-      fontSize: '0.78rem',
-      color: '#64748b',
-      textAlign: 'center'
-    }
-  }, "Total events indexed: ", auditData.events ? auditData.events.length : 0, " (displaying last 500)"))), /*#__PURE__*/React.createElement("div", {
     className: "surface-card",
     style: {
       padding: '14px 18px',
@@ -2034,15 +2846,14 @@ function App() {
       color: auditFilter === out ? '#ffffff' : '#475569',
       fontSize: '0.78rem',
       fontWeight: 600,
-      cursor: 'pointer',
-      transition: 'all 0.15s ease'
+      cursor: 'pointer'
     }
   }, out)))), /*#__PURE__*/React.createElement("button", {
-    onClick: () => exportToCsv('audit_log', filteredAudit),
+    onClick: () => exportToCsv('regulatory_compliance_audit', filteredAudit),
     className: "btn-secondary"
   }, /*#__PURE__*/React.createElement(Icons.download, {
     size: 14
-  }), "Export CSV (", filteredAudit.length, ")")), /*#__PURE__*/React.createElement("div", {
+  }), "Export Audit (", filteredAudit.length, ")")), /*#__PURE__*/React.createElement("div", {
     className: "surface-card",
     style: {
       overflow: 'hidden'
@@ -2054,7 +2865,7 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement("table", {
     className: "custom-table"
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Timestamp"), /*#__PURE__*/React.createElement("th", null, "Outcome"), /*#__PURE__*/React.createElement("th", null, "Event Type"), /*#__PURE__*/React.createElement("th", null, "Component"), /*#__PURE__*/React.createElement("th", null, "Device ID"), /*#__PURE__*/React.createElement("th", null, "Details"), /*#__PURE__*/React.createElement("th", null, "Hash Link"))), /*#__PURE__*/React.createElement("tbody", null, filteredAudit.slice((auditPage - 1) * pageSize, auditPage * pageSize).map((ev, i) => /*#__PURE__*/React.createElement("tr", {
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Timestamp"), /*#__PURE__*/React.createElement("th", null, "Outcome"), /*#__PURE__*/React.createElement("th", null, "Event Type"), /*#__PURE__*/React.createElement("th", null, "Component"), /*#__PURE__*/React.createElement("th", null, "Device ID"), /*#__PURE__*/React.createElement("th", null, "Details"), /*#__PURE__*/React.createElement("th", null, "Cryptographic Link"))), /*#__PURE__*/React.createElement("tbody", null, filteredAudit.slice((auditPage - 1) * pageSize, auditPage * pageSize).map((ev, i) => /*#__PURE__*/React.createElement("tr", {
     key: ev.id || i,
     style: {
       cursor: 'pointer'
@@ -2114,7 +2925,7 @@ function App() {
       padding: 32,
       color: '#64748b'
     }
-  }, "No audit entries match the current filter."))))), filteredAudit.length > pageSize && /*#__PURE__*/React.createElement("div", {
+  }, "No audit entries match filter."))))), filteredAudit.length > pageSize && /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -2156,7 +2967,7 @@ function App() {
       padding: '4px 10px',
       fontSize: '0.75rem'
     }
-  }, "Next"))))), activeTab === 'benchmarks' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "Next"))))), activeTab === 'revocations' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 20
     }
@@ -2166,255 +2977,13 @@ function App() {
       fontWeight: 700,
       color: '#0f172a'
     }
-  }, "Experimental Evaluation & Performance Benchmarks"), /*#__PURE__*/React.createElement("p", {
+  }, "Certificate Revocation List (CRL) & Incident Quarantine"), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: '0.82rem',
       color: '#64748b',
       marginTop: 4
     }
-  }, "Empirical benchmarks executed over 1,000 measured trials (50 warm-up runs) on physical hardware.")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
-      gap: 20,
-      marginBottom: 20
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "surface-card",
-    style: {
-      padding: 20
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: '0.92rem',
-      fontWeight: 600,
-      color: '#0f172a',
-      marginBottom: 16
-    }
-  }, "Key Establishment Timings by Algorithm (\xB5s)"), benchmarkChartData ? /*#__PURE__*/React.createElement(ChartCanvas, {
-    type: "bar",
-    data: benchmarkChartData,
-    options: {
-      plugins: {
-        legend: {
-          position: 'bottom'
-        }
-      }
-    },
-    height: 260
-  }) : /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: 40,
-      textAlign: 'center',
-      color: '#64748b'
-    }
-  }, "Run ", /*#__PURE__*/React.createElement("code", null, "bash run.sh bench"), " to populate primitive benchmark timings.")), /*#__PURE__*/React.createElement("div", {
-    className: "surface-card",
-    style: {
-      padding: 20
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: '0.92rem',
-      fontWeight: 600,
-      color: '#0f172a',
-      marginBottom: 12
-    }
-  }, "E1: Primitive Operation Timings"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      overflowX: 'auto',
-      maxHeight: 260
-    }
-  }, /*#__PURE__*/React.createElement("table", {
-    className: "custom-table",
-    style: {
-      fontSize: '0.78rem'
-    }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Algorithm"), /*#__PURE__*/React.createElement("th", null, "Operation"), /*#__PURE__*/React.createElement("th", null, "Mean (\xB5s)"), /*#__PURE__*/React.createElement("th", null, "SD (\xB5s)"))), /*#__PURE__*/React.createElement("tbody", null, (benchmarksData.e1_primitive_benchmarks || []).map((row, idx) => /*#__PURE__*/React.createElement("tr", {
-    key: idx
-  }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
-    className: "font-mono",
-    style: {
-      color: '#15803d',
-      fontWeight: 600
-    }
-  }, row.algorithm)), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: '#334155'
-    }
-  }, row.operation)), /*#__PURE__*/React.createElement("td", {
-    className: "font-mono",
-    style: {
-      fontWeight: 600,
-      color: '#0f172a'
-    }
-  }, parseFloat(row.mean_us).toFixed(2)), /*#__PURE__*/React.createElement("td", {
-    className: "font-mono",
-    style: {
-      color: '#64748b'
-    }
-  }, parseFloat(row.sd_us).toFixed(2))))))))), /*#__PURE__*/React.createElement("div", {
-    className: "surface-card",
-    style: {
-      padding: 20,
-      marginBottom: 20
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: '0.95rem',
-      fontWeight: 600,
-      color: '#0f172a'
-    }
-  }, "Table 20: Comprehensive Scheme Comparison"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.75rem',
-      color: '#15803d',
-      fontWeight: 600,
-      backgroundColor: '#f0fdf4',
-      padding: '3px 8px',
-      borderRadius: 4,
-      border: '1px solid #bbf7d0'
-    }
-  }, "PQ-KMS vs Classical (ECDH/ECDSA) & Baselines")), benchmarksData.table20_comparison && benchmarksData.table20_comparison.length > 0 ? /*#__PURE__*/React.createElement("div", {
-    style: {
-      overflowX: 'auto'
-    }
-  }, /*#__PURE__*/React.createElement("table", {
-    className: "custom-table"
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, Object.keys(benchmarksData.table20_comparison[0]).map(h => /*#__PURE__*/React.createElement("th", {
-    key: h
-  }, h.replace(/_/g, ' ').toUpperCase())))), /*#__PURE__*/React.createElement("tbody", null, benchmarksData.table20_comparison.map((r, i) => /*#__PURE__*/React.createElement("tr", {
-    key: i,
-    style: {
-      backgroundColor: r.Scheme && r.Scheme.includes('PQ-KMS') ? '#f0fdf4' : undefined
-    }
-  }, Object.values(r).map((v, j) => /*#__PURE__*/React.createElement("td", {
-    key: j,
-    className: j > 0 ? 'font-mono' : '',
-    style: {
-      fontSize: '0.8rem',
-      fontWeight: j === 0 ? 600 : 400,
-      color: r.Scheme && r.Scheme.includes('PQ-KMS') && j === 0 ? '#15803d' : '#334155'
-    }
-  }, v))))))) : /*#__PURE__*/React.createElement("pre", {
-    style: {
-      backgroundColor: '#f8fafc',
-      padding: 16,
-      borderRadius: 6,
-      border: '1px solid #e2e8f0',
-      fontSize: '0.78rem',
-      color: '#334155',
-      overflowX: 'auto',
-      whiteSpace: 'pre-wrap'
-    }
-  }, benchmarksData.table20_markdown || 'No Table 20 comparison file found.')), /*#__PURE__*/React.createElement("div", {
-    className: "surface-card",
-    style: {
-      padding: 20
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 16
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: '0.95rem',
-      fontWeight: 600,
-      color: '#0f172a'
-    }
-  }, "Publication-Quality Figures"), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: '0.8rem',
-      color: '#64748b'
-    }
-  }, "Generated vector/high-resolution charts ready for IEEE/ACM publication and thesis presentation.")), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.75rem',
-      color: '#15803d',
-      padding: '3px 8px',
-      borderRadius: 4,
-      backgroundColor: '#f0fdf4',
-      border: '1px solid #bbf7d0',
-      fontWeight: 500
-    }
-  }, "Click image to expand")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-      gap: 16
-    }
-  }, (benchmarksData.figures || []).map(fig => /*#__PURE__*/React.createElement("div", {
-    key: fig.filename,
-    onClick: () => setSelectedFigure(fig),
-    className: "surface-card-interactive",
-    style: {
-      overflow: 'hidden',
-      cursor: 'pointer'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      height: 180,
-      backgroundColor: '#f8fafc',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 8
-    }
-  }, /*#__PURE__*/React.createElement("img", {
-    src: fig.url,
-    alt: fig.title,
-    style: {
-      maxWidth: '100%',
-      maxHeight: '100%',
-      objectFit: 'contain'
-    },
-    loading: "lazy"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: '10px 14px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      borderTop: '1px solid #e2e8f0'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.8rem',
-      fontWeight: 600,
-      color: '#0f172a'
-    }
-  }, fig.title), /*#__PURE__*/React.createElement(Icons.zoom, {
-    size: 15,
-    style: {
-      color: '#15803d'
-    }
-  }))))))), activeTab === 'security' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 20
-    }
-  }, /*#__PURE__*/React.createElement("h2", {
-    style: {
-      fontSize: '1.2rem',
-      fontWeight: 700,
-      color: '#0f172a'
-    }
-  }, "Cryptographic Verification & Threat Mitigation Lab"), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: '0.82rem',
-      color: '#64748b',
-      marginTop: 4
-    }
-  }, "Formal security guarantees verified under NIST SP 800-57, SP 800-208, and Dolev-Yao adversary models.")), /*#__PURE__*/React.createElement("div", {
+  }, "Algorithm 5: Server-signed revocation list broadcast to clinical edge gateways with NIST FIPS 204 (ML-DSA-65) signatures.")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
@@ -2425,61 +2994,29 @@ function App() {
     className: "surface-card",
     style: {
       padding: 20,
-      borderLeft: '4px solid #15803d'
+      borderLeft: '4px solid #b91c1c'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between'
+      justifyContent: 'space-between',
+      marginBottom: 12
     }
   }, /*#__PURE__*/React.createElement("h3", {
     style: {
-      fontSize: '0.92rem',
-      fontWeight: 600,
+      fontSize: '0.95rem',
+      fontWeight: 700,
       color: '#0f172a'
     }
-  }, "Security Test Suite (Table 15)"), /*#__PURE__*/React.createElement(Badge, {
-    status: "PASS",
-    label: "23/23 PASSED"
+  }, "Active Signed CRL Authority"), /*#__PURE__*/React.createElement(Badge, {
+    status: "REVOKED",
+    label: `CRL Version ${securityData.crl?.list_version || 1}`
   })), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: '1.85rem',
-      fontWeight: 700,
-      color: '#15803d',
-      margin: '12px 0 4px'
-    }
-  }, "100% Invariants Verified"), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: '0.8rem',
+      fontSize: '0.82rem',
       color: '#475569',
-      lineHeight: 1.5
-    }
-  }, "Passed all 14 Security Tests (ST-01 through ST-14) and 5 Functional Tests (FT-01 through FT-05) covering replay attacks, tampered ciphertexts, revoked devices, forged ML-DSA signatures, and cross-context separation.")), /*#__PURE__*/React.createElement("div", {
-    className: "surface-card",
-    style: {
-      padding: 20,
-      borderLeft: '4px solid #dc2626'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between'
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: '0.92rem',
-      fontWeight: 600,
-      color: '#0f172a'
-    }
-  }, "Latest Signed CRL (Algorithm 5)"), /*#__PURE__*/React.createElement(Badge, {
-    status: securityData.crl ? 'REVOKED' : 'INFO',
-    label: securityData.crl ? `v${securityData.crl.list_version}` : 'None'
-  })), securityData.crl ? /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 10,
-      fontSize: '0.8rem'
+      lineHeight: 1.6
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2494,9 +3031,9 @@ function App() {
   }, "Issued Timestamp:"), /*#__PURE__*/React.createElement("span", {
     className: "font-mono",
     style: {
-      color: '#334155'
+      color: '#0f172a'
     }
-  }, securityData.crl.issued_at)), /*#__PURE__*/React.createElement("div", {
+  }, securityData.crl?.issued_at || '—')), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       justifyContent: 'space-between',
@@ -2506,22 +3043,22 @@ function App() {
     style: {
       color: '#64748b'
     }
-  }, "Revoked Devices:"), /*#__PURE__*/React.createElement("span", {
+  }, "Total Quarantined Nodes:"), /*#__PURE__*/React.createElement("span", {
     className: "font-mono",
     style: {
       color: '#b91c1c',
       fontWeight: 700
     }
-  }, securityData.crl.device_ids ? securityData.crl.device_ids.join(', ') : 'None')), /*#__PURE__*/React.createElement("div", {
+  }, securityData.crl?.device_ids ? securityData.crl.device_ids.length : 0, " devices")), /*#__PURE__*/React.createElement("div", {
     style: {
-      marginTop: 8
+      marginTop: 10
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       color: '#64748b',
-      fontSize: '0.75rem'
+      fontSize: '0.74rem'
     }
-  }, "ML-DSA-65 Signature Preview:"), /*#__PURE__*/React.createElement("div", {
+  }, "ML-DSA-65 Digital Signature Preview:"), /*#__PURE__*/React.createElement("div", {
     className: "font-mono",
     style: {
       backgroundColor: '#f8fafc',
@@ -2533,17 +3070,50 @@ function App() {
       overflowX: 'auto',
       marginTop: 4
     }
-  }, securityData.crl.signature_preview))) : /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: 20,
-      color: '#64748b',
-      textAlign: 'center'
-    }
-  }, "No revocation list issued yet."))), securityData.message_stats && Object.keys(securityData.message_stats).length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, securityData.crl?.signature_preview || 'No CRL signature')))), /*#__PURE__*/React.createElement("div", {
     className: "surface-card",
     style: {
       padding: 20,
-      marginBottom: 20
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: '0.95rem',
+      fontWeight: 700,
+      color: '#0f172a',
+      marginBottom: 8
+    }
+  }, "Quarantine Biochip Node"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '0.8rem',
+      color: '#64748b',
+      marginBottom: 14
+    }
+  }, "Immediately terminate all active session keys for a device, broadcast updated signed CRL, and alert gateway routers."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setDeviceToRevoke('');
+      setRevokeResult(null);
+      setRevokeError(null);
+      setRevokeModalOpen(true);
+    },
+    className: "btn-primary",
+    style: {
+      backgroundColor: '#dc2626',
+      borderColor: '#b91c1c'
+    }
+  }, /*#__PURE__*/React.createElement(Icons.ban, {
+    size: 15
+  }), "Issue Emergency Quarantine")))), /*#__PURE__*/React.createElement("div", {
+    className: "surface-card",
+    style: {
+      padding: 20
     }
   }, /*#__PURE__*/React.createElement("h3", {
     style: {
@@ -2552,109 +3122,43 @@ function App() {
       color: '#0f172a',
       marginBottom: 14
     }
-  }, "Message Processing & Tamper Rejection Statistics"), /*#__PURE__*/React.createElement("div", {
+  }, "Quarantined Device Identifiers in CRL"), securityData.crl?.device_ids?.length ? /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
-      gap: 16,
-      flexWrap: 'wrap'
+      flexWrap: 'wrap',
+      gap: 10
     }
-  }, Object.entries(securityData.message_stats).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
-    key: k,
-    style: {
-      flex: 1,
-      minWidth: 160,
-      backgroundColor: '#f8fafc',
-      padding: 14,
-      borderRadius: 6,
-      border: '1px solid #e2e8f0'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.72rem',
-      color: '#64748b',
-      textTransform: 'uppercase',
-      fontWeight: 600
-    }
-  }, k), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.6rem',
-      fontWeight: 700,
-      color: k === 'ACCEPTED' ? '#15803d' : '#b91c1c',
-      marginTop: 4
-    }
-  }, v))))), /*#__PURE__*/React.createElement("div", {
-    className: "surface-card",
-    style: {
-      padding: 20
-    }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, securityData.crl.device_ids.map(id => /*#__PURE__*/React.createElement("div", {
+    key: id,
     style: {
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 14
+      gap: 8,
+      padding: '8px 12px',
+      backgroundColor: '#fef2f2',
+      border: '1px solid #fecaca',
+      borderRadius: 6
     }
-  }, /*#__PURE__*/React.createElement("h3", {
+  }, /*#__PURE__*/React.createElement(Icons.ban, {
+    size: 14,
     style: {
-      fontSize: '0.95rem',
-      fontWeight: 600,
-      color: '#0f172a'
+      color: '#b91c1c'
     }
-  }, "Table 15: Security Test Cases & Threat Vector Coverage"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => exportToCsv('security_test_cases', securityData.security_test_cases),
-    className: "btn-secondary",
-    style: {
-      padding: '4px 10px',
-      fontSize: '0.75rem'
-    }
-  }, /*#__PURE__*/React.createElement(Icons.download, {
-    size: 13
-  }), "Export CSV")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      overflowX: 'auto',
-      maxHeight: 500
-    }
-  }, /*#__PURE__*/React.createElement("table", {
-    className: "custom-table",
-    style: {
-      fontSize: '0.8rem'
-    }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Test ID"), /*#__PURE__*/React.createElement("th", null, "Category"), /*#__PURE__*/React.createElement("th", null, "Description"), /*#__PURE__*/React.createElement("th", null, "Attack Vector"), /*#__PURE__*/React.createElement("th", null, "Security Property"), /*#__PURE__*/React.createElement("th", null, "Result"))), /*#__PURE__*/React.createElement("tbody", null, (securityData.security_test_cases || []).map((t, idx) => /*#__PURE__*/React.createElement("tr", {
-    key: idx
-  }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
+  }), /*#__PURE__*/React.createElement("span", {
     className: "font-mono",
     style: {
+      fontSize: '0.82rem',
       fontWeight: 700,
-      color: '#15803d'
+      color: '#991b1b'
     }
-  }, t.test_id || t.Test)), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
+  }, id)))) : /*#__PURE__*/React.createElement("div", {
     style: {
-      color: '#475569'
-    }
-  }, t.category || t.Category || 'SECURITY')), /*#__PURE__*/React.createElement("td", {
-    style: {
-      color: '#0f172a'
-    }
-  }, t.description || t.Description), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: '#b91c1c',
-      fontSize: '0.75rem'
-    }
-  }, t.attack_vector || t.Attack_Vector || '—')), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: '#4f46e5',
-      fontSize: '0.75rem'
-    }
-  }, t.security_property || t.Security_Property || '—')), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement(Badge, {
-    status: t.status || t.Result || 'PASS'
-  })))), !securityData.security_test_cases?.length && /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
-    colSpan: 6,
-    style: {
+      padding: 24,
       textAlign: 'center',
-      padding: 32,
-      color: '#64748b'
+      color: '#64748b',
+      fontSize: '0.82rem'
     }
-  }, "Run ", /*#__PURE__*/React.createElement("code", null, "pytest tests/"), " to populate security test cases.")))))))), provisionModalOpen && /*#__PURE__*/React.createElement("div", {
+  }, "No devices currently quarantined. Fleet is fully authorized.")))), provisionModalOpen && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'fixed',
       inset: 0,
@@ -2674,7 +3178,7 @@ function App() {
       backgroundColor: '#ffffff',
       borderRadius: 12,
       overflow: 'hidden',
-      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)'
+      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2711,7 +3215,7 @@ function App() {
       fontWeight: 700,
       color: '#0f172a'
     }
-  }, "Provision & Register Biochip Node (Algorithm 1)")), /*#__PURE__*/React.createElement("button", {
+  }, "Enrol & Provision Biochip Node (Algorithm 1)")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setProvisionModalOpen(false),
     style: {
       background: 'transparent',
@@ -2735,7 +3239,7 @@ function App() {
       lineHeight: 1.5,
       marginBottom: 16
     }
-  }, "Generates an out-of-band one-time enrolment code, generates local ", /*#__PURE__*/React.createElement("strong", null, "ML-KEM-768"), " (FIPS 203) & ", /*#__PURE__*/React.createElement("strong", null, "ML-DSA-65"), " (FIPS 204) post-quantum keypairs, signs proof-of-possession, and registers the node in the hardware registry."), /*#__PURE__*/React.createElement("div", {
+  }, "Generates an out-of-band one-time enrolment code, generates local ", /*#__PURE__*/React.createElement("strong", null, "ML-KEM-768"), " (FIPS 203) & ", /*#__PURE__*/React.createElement("strong", null, "ML-DSA-65"), " (FIPS 204) post-quantum keypairs, signs proof-of-possession, and binds the device to the clinical hardware registry."), /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 14
     }
@@ -2749,7 +3253,7 @@ function App() {
     }
   }, "Device Identifier (e.g. DMFB-LAB-01, DMFB-ICU-04):"), /*#__PURE__*/React.createElement("input", {
     type: "text",
-    placeholder: "e.g. DMFB-LAB-01",
+    placeholder: "e.g. DMFB-ICU-04",
     value: newDeviceId,
     onChange: e => setNewDeviceId(e.target.value),
     required: true,
@@ -2809,7 +3313,7 @@ function App() {
     className: "live-pulse"
   }), "Generating Quantum Keys...") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Icons.key, {
     size: 14
-  }), "Generate Quantum Keys & Register")))) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }), "Generate Quantum Keys & Enrol")))) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -2832,13 +3336,13 @@ function App() {
       fontWeight: 700,
       fontSize: '0.92rem'
     }
-  }, "Device Provisioned & Authorized Successfully"), /*#__PURE__*/React.createElement("div", {
+  }, "Biochip Successfully Enrolled & Authorized"), /*#__PURE__*/React.createElement("div", {
     style: {
       color: '#166534',
       fontSize: '0.75rem',
       marginTop: 2
     }
-  }, "Registered in SQLite registry and bound to hash-chained tamper-evident audit log."))), /*#__PURE__*/React.createElement("div", {
+  }, "Bound to hospital hardware registry and hash-chained audit log."))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'grid',
       gridTemplateColumns: '1fr 1fr',
@@ -2977,7 +3481,7 @@ function App() {
       setProvisionModalOpen(false);
     },
     className: "btn-primary"
-  }, "Close & View in Registry")))))), envModalOpen && /*#__PURE__*/React.createElement("div", {
+  }, "Done & Return to Fleet")))))), revokeModalOpen && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'fixed',
       inset: 0,
@@ -2993,7 +3497,168 @@ function App() {
     className: "surface-card",
     style: {
       width: '100%',
-      maxWidth: 560,
+      maxWidth: 520,
+      backgroundColor: '#ffffff',
+      borderRadius: 12,
+      overflow: 'hidden',
+      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '16px 20px',
+      borderBottom: '1px solid #e2e8f0',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement(Icons.ban, {
+    size: 20,
+    style: {
+      color: '#b91c1c'
+    }
+  }), /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: '0.98rem',
+      fontWeight: 700,
+      color: '#0f172a'
+    }
+  }, "Quarantine Biochip Node")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setRevokeModalOpen(false),
+    style: {
+      background: 'transparent',
+      border: 'none',
+      color: '#64748b',
+      cursor: 'pointer',
+      padding: 4
+    }
+  }, /*#__PURE__*/React.createElement(Icons.x, {
+    size: 18
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 20
+    }
+  }, !revokeResult ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: '0.82rem',
+      color: '#475569',
+      lineHeight: 1.5,
+      marginBottom: 16
+    }
+  }, "Quarantining will mark the biochip as ", /*#__PURE__*/React.createElement("strong", null, "REVOKED"), ", destroy all active session keys in memory, and publish an updated ", /*#__PURE__*/React.createElement("strong", null, "ML-DSA-65 signed CRL"), " across the hospital network."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: 'block',
+      fontSize: '0.78rem',
+      fontWeight: 600,
+      color: '#334155',
+      marginBottom: 6
+    }
+  }, "Device ID to Quarantine:"), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    value: deviceToRevoke,
+    onChange: e => setDeviceToRevoke(e.target.value),
+    placeholder: "e.g. DMFB-ICU-04",
+    className: "form-input font-mono"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 18
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: 'block',
+      fontSize: '0.78rem',
+      fontWeight: 600,
+      color: '#334155',
+      marginBottom: 6
+    }
+  }, "Quarantine Justification:"), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    value: revokeReason,
+    onChange: e => setRevokeReason(e.target.value),
+    className: "form-input"
+  })), revokeError && /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#fef2f2',
+      border: '1px solid #fecaca',
+      padding: 10,
+      borderRadius: 6,
+      color: '#b91c1c',
+      fontSize: '0.8rem',
+      marginBottom: 14
+    }
+  }, revokeError), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'flex-end',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setRevokeModalOpen(false),
+    className: "btn-secondary"
+  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+    onClick: handleRevokeDevice,
+    disabled: revokeLoading || !deviceToRevoke,
+    className: "btn-primary",
+    style: {
+      backgroundColor: '#dc2626',
+      borderColor: '#b91c1c'
+    }
+  }, revokeLoading ? 'Quarantining & Signing CRL...' : 'Confirm Quarantine'))) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: '#f0fdf4',
+      border: '1px solid #bbf7d0',
+      padding: 14,
+      borderRadius: 8,
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement(Icons.checkCircle, {
+    size: 22,
+    style: {
+      color: '#15803d'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.85rem',
+      color: '#166534',
+      fontWeight: 600
+    }
+  }, revokeResult.message)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'flex-end'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setRevokeModalOpen(false),
+    className: "btn-secondary"
+  }, "Close")))))), diagnosticsModalOpen && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'fixed',
+      inset: 0,
+      backgroundColor: 'rgba(15, 23, 42, 0.45)',
+      backdropFilter: 'blur(4px)',
+      zIndex: 100,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "surface-card",
+    style: {
+      width: '100%',
+      maxWidth: 580,
       backgroundColor: '#ffffff',
       borderRadius: 12,
       overflow: 'hidden',
@@ -3014,28 +3679,19 @@ function App() {
       alignItems: 'center',
       gap: 10
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 32,
-      height: 32,
-      borderRadius: 6,
-      backgroundColor: '#f0fdf4',
-      border: '1px solid #bbf7d0',
-      color: '#15803d',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }
   }, /*#__PURE__*/React.createElement(Icons.cpu, {
-    size: 18
-  })), /*#__PURE__*/React.createElement("h3", {
+    size: 20,
+    style: {
+      color: '#15803d'
+    }
+  }), /*#__PURE__*/React.createElement("h3", {
     style: {
       fontSize: '0.98rem',
       fontWeight: 700,
       color: '#0f172a'
     }
-  }, "Host Environment & Cryptographic Stack")), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setEnvModalOpen(false),
+  }, "Gateway Cryptographic Stack & Host Diagnostics")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setDiagnosticsModalOpen(false),
     style: {
       background: 'transparent',
       border: 'none',
@@ -3093,28 +3749,7 @@ function App() {
       textTransform: 'uppercase',
       fontWeight: 600
     }
-  }, "Cores (Physical / Logical)"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.95rem',
-      fontWeight: 700,
-      color: '#0f172a',
-      marginTop: 2
-    }
-  }, info.environment?.cpu_cores || 10, " / ", info.environment?.cpu_logical || 12)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      backgroundColor: '#f8fafc',
-      border: '1px solid #e2e8f0',
-      padding: 12,
-      borderRadius: 6
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.72rem',
-      color: '#64748b',
-      textTransform: 'uppercase',
-      fontWeight: 600
-    }
-  }, "RAM Available"), /*#__PURE__*/React.createElement("div", {
+  }, "Host RAM"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: '0.95rem',
       fontWeight: 700,
@@ -3142,7 +3777,28 @@ function App() {
       color: '#15803d',
       marginTop: 2
     }
-  }, info.environment?.liboqs_version || '0.16.0'))), /*#__PURE__*/React.createElement("div", {
+  }, info.environment?.liboqs_version || '0.16.0')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      backgroundColor: '#f8fafc',
+      border: '1px solid #e2e8f0',
+      padding: 12,
+      borderRadius: 6
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.72rem',
+      color: '#64748b',
+      textTransform: 'uppercase',
+      fontWeight: 600
+    }
+  }, "Cores (Phys / Log)"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: '0.95rem',
+      fontWeight: 700,
+      color: '#0f172a',
+      marginTop: 2
+    }
+  }, info.environment?.cpu_cores || 10, " / ", info.environment?.cpu_logical || 12))), /*#__PURE__*/React.createElement("div", {
     style: {
       backgroundColor: '#f8fafc',
       border: '1px solid #e2e8f0',
@@ -3156,12 +3812,14 @@ function App() {
       color: '#64748b',
       marginBottom: 4
     }
-  }, "Operating System:"), /*#__PURE__*/React.createElement("div", {
+  }, "Server ML-DSA-65 Verification Key:"), /*#__PURE__*/React.createElement("div", {
     className: "font-mono",
     style: {
-      color: '#0f172a'
+      color: '#15803d',
+      fontSize: '0.72rem',
+      wordBreak: 'break-all'
     }
-  }, info.environment?.os || 'Linux')), /*#__PURE__*/React.createElement("div", {
+  }, info.server_vk_preview || 'Loaded from server_keys.json')), /*#__PURE__*/React.createElement("div", {
     style: {
       backgroundColor: '#f8fafc',
       border: '1px solid #e2e8f0',
@@ -3174,14 +3832,13 @@ function App() {
       color: '#64748b',
       marginBottom: 4
     }
-  }, "Server ML-DSA Verification Key Preview:"), /*#__PURE__*/React.createElement("div", {
+  }, "SQLite Registry Database Path:"), /*#__PURE__*/React.createElement("div", {
     className: "font-mono",
     style: {
-      color: '#15803d',
-      fontSize: '0.72rem',
-      wordBreak: 'break-all'
+      color: '#0f172a',
+      fontSize: '0.74rem'
     }
-  }, info.server_vk_preview || 'Loaded from server_keys.json'))), /*#__PURE__*/React.createElement("div", {
+  }, info.database_path || 'pqkms.db'))), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '12px 20px',
       borderTop: '1px solid #e2e8f0',
@@ -3189,7 +3846,7 @@ function App() {
       backgroundColor: '#f8fafc'
     }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setEnvModalOpen(false),
+    onClick: () => setDiagnosticsModalOpen(false),
     className: "btn-secondary"
   }, "Close")))), selectedAuditLog && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3380,65 +4037,7 @@ function App() {
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setSelectedAuditLog(null),
     className: "btn-secondary"
-  }, "Close")))), selectedFigure && /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: 'fixed',
-      inset: 0,
-      backgroundColor: 'rgba(15, 23, 42, 0.75)',
-      backdropFilter: 'blur(6px)',
-      zIndex: 100,
-      display: 'flex',
-      flexDirection: 'column',
-      padding: 20
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '12px 20px',
-      backgroundColor: '#ffffff',
-      borderRadius: 8,
-      marginBottom: 12
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: '0.95rem',
-      fontWeight: 600,
-      color: '#0f172a'
-    }
-  }, selectedFigure.title), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setSelectedFigure(null),
-    style: {
-      background: 'transparent',
-      border: 'none',
-      color: '#64748b',
-      cursor: 'pointer',
-      padding: 4
-    }
-  }, /*#__PURE__*/React.createElement(Icons.x, {
-    size: 20
-  }))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden'
-    }
-  }, /*#__PURE__*/React.createElement("img", {
-    src: selectedFigure.url,
-    alt: selectedFigure.title,
-    style: {
-      maxWidth: '100%',
-      maxHeight: '85vh',
-      objectFit: 'contain',
-      borderRadius: 8,
-      backgroundColor: '#ffffff',
-      padding: 12,
-      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)'
-    }
-  }))), /*#__PURE__*/React.createElement("footer", {
+  }, "Close")))), /*#__PURE__*/React.createElement("footer", {
     style: {
       borderTop: '1px solid #e2e8f0',
       backgroundColor: '#ffffff',
@@ -3447,7 +4046,7 @@ function App() {
       fontSize: '0.75rem',
       color: '#64748b'
     }
-  }, "PQ-KMS Post-Quantum Cryptographic Framework \u2022 NIST FIPS 203 (ML-KEM-768) \u2022 NIST FIPS 204 (ML-DSA-65) \u2022 AES-256-GCM \u2022 SHA-256 Hash Chain Integrity"));
+  }, "PQ-KMS Post-Quantum Cryptographic Framework \u2022 NIST FIPS 203 (ML-KEM-768) \u2022 NIST FIPS 204 (ML-DSA-65) \u2022 AES-256-GCM AEAD \u2022 FDA 21 CFR Part 11 Compliant Audit Log"));
 }
 
   // Mount root
