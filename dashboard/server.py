@@ -324,10 +324,10 @@ else:
             """
             <html>
             <head><title>PQ-KMS React Dashboard</title></head>
-            <body style="font-family: sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; text-align: center;">
-                <h2>PQ-KMS Modern React Dashboard</h2>
-                <p>The React UI is building or needs to be built with: <code>npm run build</code> in <code>dashboard/react_ui</code>.</p>
-                <p>The backend API is active at <a href="/api/info" style="color: #38bdf8;">/api/info</a>.</p>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; padding: 48px; text-align: center;">
+                <h2 style="color: #15803d; font-weight: 700;">PQ-KMS Biochip Security Console</h2>
+                <p style="color: #64748b;">The React UI bundle is building or needs to be built with: <code>node dashboard/react_ui/build.cjs</code></p>
+                <p style="margin-top: 16px;">The backend API is active at <a href="/api/info" style="color: #15803d; font-weight: 600;">/api/info</a>.</p>
             </body>
             </html>
             """
