@@ -10,10 +10,13 @@ Security rules (Section 6.12):
 from __future__ import annotations
 
 import base64
+import csv
+import io
 import time
 import uuid
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.models import (
     AuditResponse,
@@ -25,11 +28,14 @@ from app.api.models import (
     MetricsResponse,
     RegisterRequest,
     RegisterResponse,
+    ResealResponse,
     RevokeRequest,
     RevokeResponse,
     SessionRequest,
     SessionResponse,
     StateResponse,
+    TamperSimulationRequest,
+    TamperSimulationResponse,
 )
 from app.audit.audit import get_audit_logger
 from app.config import (
@@ -366,15 +372,151 @@ def get_state():
     return StateResponse(**summary)
 
 
-# ─── GET /audit ───────────────────────────────────────────────────────────────
+# ─── Audit Log & Cryptographic Ledger Governance ───────────────────────────
 
 @router.get("/audit", response_model=AuditResponse)
-def get_audit(limit: int = 100):
-    """Dashboard: audit log with chain integrity check."""
+@router.get("/api/audit", response_model=AuditResponse)
+def get_audit(
+    limit: int = 50,
+    offset: int = 0,
+    search: str | None = None,
+    event_type: str | None = None,
+    outcome: str | None = None,
+    actor: str | None = None,
+):
+    """
+    Dashboard: audit log with search, filtering, pagination, and cryptographic chain verification.
+    """
     db = get_db()
-    events = db.get_audit_log(limit)
-    chain_valid, break_idx = db.verify_audit_chain()
-    return AuditResponse(events=events, chain_valid=chain_valid, chain_break_index=break_idx)
+    events, matching_count, stats = db.get_audit_log_paginated(
+        limit=limit,
+        offset=offset,
+        search=search,
+        event_type=event_type,
+        outcome=outcome,
+        actor=actor,
+    )
+    verification = db.verify_audit_chain_detailed()
+    return AuditResponse(
+        events=events,
+        chain_valid=verification["is_valid"],
+        chain_break_index=verification["break_index"],
+        total_records=verification["total_records"],
+        filtered_count=matching_count,
+        break_details=verification["break_details"],
+        stats=stats,
+    )
+
+
+@router.post("/audit/reseal", response_model=ResealResponse)
+@router.post("/api/audit/reseal", response_model=ResealResponse)
+def reseal_audit(actor: str = "admin"):
+    """
+    Administrative command: Recalculate and re-anchor the cryptographic SHA-256
+    hash chain across all records in the ledger and record an official audit event.
+    """
+    db = get_db()
+    result = db.reseal_audit_chain(actor=actor)
+    return ResealResponse(
+        status=result["status"],
+        resealed_count=result["resealed_count"],
+        repaired_count=result["repaired_count"],
+        reseal_event_id=result.get("reseal_event_id"),
+        message=f"Successfully verified and re-anchored {result['resealed_count']} audit blocks ({result['repaired_count']} discontinuities corrected).",
+    )
+
+
+@router.post("/audit/simulate-tamper", response_model=TamperSimulationResponse)
+@router.post("/api/audit/simulate-tamper", response_model=TamperSimulationResponse)
+def simulate_tamper(req: TamperSimulationRequest | None = None):
+    """
+    Adversarial sandbox: Alter a historical block hash to test real-time tamper evidence.
+    """
+    db = get_db()
+    target_idx = req.target_index if req else None
+    result = db.simulate_audit_tamper(target_index=target_idx)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=400, detail=result.get("message"))
+    return TamperSimulationResponse(
+        status="tampered",
+        tampered_index=result["tampered_index"],
+        event_id=result["event_id"],
+        original_prev_hash=result["original_prev_hash"],
+        tampered_prev_hash=result["tampered_prev_hash"],
+        message=f"Simulated adversarial hash tampering at sequence index #{result['tampered_index']}.",
+    )
+
+
+@router.post("/audit/restore", response_model=ResealResponse)
+@router.post("/api/audit/restore", response_model=ResealResponse)
+def restore_tamper():
+    """
+    Adversarial sandbox: Restore simulated tamper modifications and verify chain.
+    """
+    db = get_db()
+    result = db.restore_audit_tamper()
+    return ResealResponse(
+        status="restored",
+        resealed_count=result["resealed_count"],
+        repaired_count=result["repaired_count"],
+        reseal_event_id=result.get("reseal_event_id"),
+        message=f"Audit chain restored and verified. {result['repaired_count']} blocks re-aligned.",
+    )
+
+
+@router.get("/audit/export")
+@router.get("/api/audit/export")
+def export_audit(format: str = "csv"):
+    """
+    Export the full audit trail in FDA 21 CFR Part 11 compliant CSV or JSON format.
+    """
+    db = get_db()
+    rows, _, _ = db.get_audit_log_paginated(limit=100000, offset=0)
+
+    if format.lower() == "json":
+        verification = db.verify_audit_chain_detailed()
+        from datetime import datetime, timezone
+        export_bundle = {
+            "metadata": {
+                "system": "PQ-KMS Medical Biochip Cryptographic Management Platform",
+                "standard": "FDA 21 CFR Part 11 / NIST FIPS 203 / NIST FIPS 204",
+                "exported_at": datetime.now(timezone.utc).isoformat(),
+                "total_records": len(rows),
+                "chain_valid": verification["is_valid"],
+                "chain_break_index": verification["break_index"],
+            },
+            "records": rows,
+        }
+        return JSONResponse(
+            content=export_bundle,
+            headers={"Content-Disposition": 'attachment; filename="audit_ledger_forensics.json"'}
+        )
+
+    # CSV export
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Event ID", "Timestamp (UTC)", "Actor", "Event Type",
+        "Target Node", "Outcome", "Details", "Previous Hash (H_{i-1})", "Current Hash (H_i)"
+    ])
+    for r in rows:
+        writer.writerow([
+            r.get("event_id", ""),
+            r.get("time", ""),
+            r.get("actor", ""),
+            r.get("event_type", ""),
+            r.get("device_id", "") or "—",
+            r.get("outcome", ""),
+            r.get("details", "") or "—",
+            r.get("prev_hash", ""),
+            r.get("current_hash", ""),
+        ])
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="audit_ledger_21cfr11.csv"'}
+    )
 
 
 # ─── GET /metrics ─────────────────────────────────────────────────────────────

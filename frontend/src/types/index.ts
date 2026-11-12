@@ -38,7 +38,34 @@ export interface Session {
   last_counter: number;
 }
 
+export interface AuditBreakDetails {
+  index: number;
+  rowid: number;
+  event_id: string;
+  time: string;
+  actor: string;
+  event_type: string;
+  device_id?: string;
+  outcome: string;
+  details?: string;
+  expected_prev_hash: string;
+  actual_prev_hash: string;
+  preceding_event_id?: string;
+  preceding_time?: string;
+  preceding_event_type?: string;
+  reason: string;
+}
+
+export interface AuditStats {
+  ACCEPTED: number;
+  REJECTED: number;
+  INFO: number;
+  TOTAL: number;
+  [key: string]: number;
+}
+
 export interface AuditEvent {
+  rowid?: number;
   event_id: string;
   time: string;
   actor: string;
@@ -47,6 +74,7 @@ export interface AuditEvent {
   outcome: 'ACCEPTED' | 'REJECTED' | 'INFO';
   details?: string;
   prev_hash: string;
+  current_hash?: string;
 }
 
 export interface StateSummary {
@@ -65,6 +93,10 @@ export interface AuditResponse {
   events: AuditEvent[];
   chain_valid: boolean;
   chain_break_index: number | null;
+  total_records?: number;
+  filtered_count?: number;
+  break_details?: AuditBreakDetails | null;
+  stats?: AuditStats | null;
 }
 
 export interface CRLResponse {

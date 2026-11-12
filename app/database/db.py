@@ -24,6 +24,8 @@ class Database:
     def __init__(self, db_path: str = DATABASE_PATH) -> None:
         self.db_path = db_path
         self._local = threading.local()
+        self._audit_lock = threading.RLock()
+        self._tamper_backup: dict[str, Any] | None = None
         self.init_db()
 
     def _get_conn(self) -> sqlite3.Connection:
@@ -339,48 +341,262 @@ class Database:
         device_id: str | None = None,
         details: str | None = None,
     ) -> str:
-        event_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
-        prev_hash = self.get_last_audit_hash()
-        # Build this record's content for hashing into the NEXT record
-        record_content = f"{event_id}|{now}|{actor}|{event_type}|{device_id}|{outcome}|{prev_hash}"
-        # We store prev_hash (the previous record's hash), and the next record will hash this one
-        with self.cursor() as cur:
-            cur.execute(
-                """INSERT INTO audit_log
-                   (event_id, time, actor, event_type, device_id, outcome, details, prev_hash)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                (event_id, now, actor, event_type, device_id, outcome, details, prev_hash),
-            )
-        return event_id
+        with self._audit_lock:
+            event_id = str(uuid.uuid4())
+            now = datetime.now(timezone.utc).isoformat()
+            prev_hash = self.get_last_audit_hash()
+            with self.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO audit_log
+                       (event_id, time, actor, event_type, device_id, outcome, details, prev_hash)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (event_id, now, actor, event_type, device_id, outcome, details, prev_hash),
+                )
+            return event_id
 
     def get_audit_log(self, limit: int = 200) -> list[dict]:
         with self.cursor() as cur:
             cur.execute(
                 "SELECT * FROM audit_log ORDER BY time DESC LIMIT ?", (limit,)
             )
-            return [dict(r) for r in cur.fetchall()]
+            rows = [dict(r) for r in cur.fetchall()]
+            for r in rows:
+                r["current_hash"] = _compute_record_hash(r)
+            return rows
 
-    def verify_audit_chain(self) -> tuple[bool, int | None]:
+    def get_audit_log_paginated(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        search: str | None = None,
+        event_type: str | None = None,
+        outcome: str | None = None,
+        actor: str | None = None,
+    ) -> tuple[list[dict], int, dict]:
         """
-        Verify the hash chain integrity of the audit log.
-
-        Returns:
-            (is_valid, break_index) — break_index is None if valid.
+        Fetch audit records with search, filter, pagination, and outcome statistics.
+        Also attaches computed `current_hash` for each returned event.
         """
         with self.cursor() as cur:
-            cur.execute("SELECT * FROM audit_log ORDER BY rowid ASC")
+            # Query global outcome counts
+            cur.execute(
+                "SELECT outcome, COUNT(*) FROM audit_log GROUP BY outcome"
+            )
+            stats = {row[0]: row[1] for row in cur.fetchall()}
+            stats["TOTAL"] = sum(stats.values())
+
+            # Base query
+            query = "SELECT rowid, * FROM audit_log WHERE 1=1"
+            params: list[Any] = []
+
+            if search:
+                s = f"%{search.strip()}%"
+                query += " AND (event_type LIKE ? OR actor LIKE ? OR device_id LIKE ? OR details LIKE ? OR event_id LIKE ?)"
+                params.extend([s, s, s, s, s])
+
+            if event_type and event_type != "ALL":
+                query += " AND event_type = ?"
+                params.append(event_type)
+
+            if outcome and outcome != "ALL":
+                query += " AND outcome = ?"
+                params.append(outcome)
+
+            if actor and actor != "ALL":
+                query += " AND actor = ?"
+                params.append(actor)
+
+            # Count total matching query
+            count_query = query.replace("SELECT rowid, * FROM", "SELECT COUNT(*) FROM")
+            cur.execute(count_query, params)
+            matching_count = cur.fetchone()[0]
+
+            # Fetch paginated rows ordered by rowid DESC (newest first)
+            query += " ORDER BY rowid DESC LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+
+            cur.execute(query, params)
             rows = [dict(r) for r in cur.fetchall()]
 
+            # Compute current_hash for each row
+            for r in rows:
+                r["current_hash"] = _compute_record_hash(r)
+
+            return rows, matching_count, stats
+
+    def verify_audit_chain_detailed(self) -> dict:
+        """
+        Verify the hash chain integrity of the audit log with forensic details.
+        Returns detailed diagnostic breakdown if discontinuity is found.
+        """
+        with self.cursor() as cur:
+            cur.execute("SELECT rowid, * FROM audit_log ORDER BY rowid ASC")
+            rows = [dict(r) for r in cur.fetchall()]
+
+        total = len(rows)
         if not rows:
-            return True, None
+            return {
+                "is_valid": True,
+                "break_index": None,
+                "total_records": 0,
+                "break_details": None,
+            }
 
         genesis_hash = "0" * 64
         for i, row in enumerate(rows):
             expected_prev = genesis_hash if i == 0 else _compute_record_hash(rows[i - 1])
             if row["prev_hash"] != expected_prev:
-                return False, i
-        return True, None
+                # Analyze whether this was a concurrent race fork
+                is_concurrent_fork = any(
+                    rows[j]["prev_hash"] == row["prev_hash"]
+                    for j in range(max(0, i - 10), i)
+                )
+                break_details = {
+                    "index": i,
+                    "rowid": row.get("rowid"),
+                    "event_id": row.get("event_id"),
+                    "time": row.get("time"),
+                    "actor": row.get("actor"),
+                    "event_type": row.get("event_type"),
+                    "device_id": row.get("device_id"),
+                    "outcome": row.get("outcome"),
+                    "details": row.get("details"),
+                    "expected_prev_hash": expected_prev,
+                    "actual_prev_hash": row.get("prev_hash"),
+                    "preceding_event_id": rows[i - 1].get("event_id") if i > 0 else None,
+                    "preceding_time": rows[i - 1].get("time") if i > 0 else None,
+                    "preceding_event_type": rows[i - 1].get("event_type") if i > 0 else None,
+                    "reason": (
+                        "Non-linear branch / concurrent thread fork detected at sequence index #"
+                        + str(i)
+                        + ". Multiple transactions referenced the same parent block."
+                        if is_concurrent_fork
+                        else "Cryptographic digest mismatch: Stored prev_hash does not match predecessor SHA-256."
+                    ),
+                }
+                return {
+                    "is_valid": False,
+                    "break_index": i,
+                    "total_records": total,
+                    "break_details": break_details,
+                }
+        return {
+            "is_valid": True,
+            "break_index": None,
+            "total_records": total,
+            "break_details": None,
+        }
+
+    def verify_audit_chain(self) -> tuple[bool, int | None]:
+        """
+        Verify the hash chain integrity of the audit log.
+        Returns:
+            (is_valid, break_index) — break_index is None if valid.
+        """
+        res = self.verify_audit_chain_detailed()
+        return res["is_valid"], res["break_index"]
+
+    def reseal_audit_chain(self, actor: str = "admin") -> dict:
+        """
+        Recalculate and re-anchor the cryptographic SHA-256 chain from genesis across
+        all historical audit records, eliminating concurrency race-forks, then record
+        an official AUDIT_CHAIN_RESEALED governance entry.
+        """
+        with self._audit_lock:
+            with self.cursor() as cur:
+                cur.execute("SELECT rowid, * FROM audit_log ORDER BY rowid ASC")
+                rows = [dict(r) for r in cur.fetchall()]
+                if not rows:
+                    return {"status": "empty", "resealed_count": 0, "repaired_count": 0}
+
+                genesis_hash = "0" * 64
+                prev = genesis_hash
+                repaired_count = 0
+
+                for i, row in enumerate(rows):
+                    rowid = row["rowid"]
+                    if row["prev_hash"] != prev:
+                        cur.execute(
+                            "UPDATE audit_log SET prev_hash = ? WHERE rowid = ?",
+                            (prev, rowid),
+                        )
+                        row["prev_hash"] = prev
+                        repaired_count += 1
+                    prev = _compute_record_hash(row)
+
+            # Clear any active simulation backup
+            self._tamper_backup = None
+
+            # Log governance reseal event
+            event_id = self.append_audit_event(
+                actor=actor,
+                event_type="AUDIT_CHAIN_RESEALED",
+                outcome="ACCEPTED",
+                device_id=None,
+                details=f"Cryptographic hash chain verified and re-anchored across {len(rows)} records. Repaired {repaired_count} discontinuities.",
+            )
+            return {
+                "status": "success",
+                "resealed_count": len(rows),
+                "repaired_count": repaired_count,
+                "reseal_event_id": event_id,
+            }
+
+    def simulate_audit_tamper(self, target_index: int | None = None) -> dict:
+        """
+        Adversarial sandbox: Alter a historical block prev_hash to test real-time tamper evidence.
+        """
+        with self._audit_lock:
+            with self.cursor() as cur:
+                cur.execute("SELECT rowid, * FROM audit_log ORDER BY rowid ASC")
+                rows = [dict(r) for r in cur.fetchall()]
+                if len(rows) == 0:
+                    return {"status": "error", "message": "No audit records found to simulate tamper"}
+
+                # Pick index (default: middle of chain or latest available)
+                idx = target_index if (target_index is not None and 0 <= target_index < len(rows)) else (len(rows) // 2)
+                target = rows[idx]
+                orig_hash = target["prev_hash"]
+                # Invert/tamper the first 8 hex characters
+                tampered_hash = "deadbeef" + orig_hash[8:]
+
+                # Save backup for clean restoration
+                self._tamper_backup = {
+                    "rowid": target["rowid"],
+                    "index": idx,
+                    "original_prev_hash": orig_hash,
+                }
+
+                cur.execute(
+                    "UPDATE audit_log SET prev_hash = ? WHERE rowid = ?",
+                    (tampered_hash, target["rowid"]),
+                )
+
+                return {
+                    "status": "tampered",
+                    "tampered_index": idx,
+                    "event_id": target["event_id"],
+                    "original_prev_hash": orig_hash,
+                    "tampered_prev_hash": tampered_hash,
+                }
+
+    def restore_audit_tamper(self) -> dict:
+        """
+        Adversarial sandbox: Revert simulated tamper to original hash state or reseal chain.
+        """
+        with self._audit_lock:
+            if self._tamper_backup:
+                rowid = self._tamper_backup["rowid"]
+                orig_hash = self._tamper_backup["original_prev_hash"]
+                with self.cursor() as cur:
+                    cur.execute(
+                        "UPDATE audit_log SET prev_hash = ? WHERE rowid = ?",
+                        (orig_hash, rowid),
+                    )
+                self._tamper_backup = None
+
+            # Reseal to ensure complete continuity
+            return self.reseal_audit_chain(actor="admin")
 
     # ─── Benchmark operations ───────────────────────────────────────────
 

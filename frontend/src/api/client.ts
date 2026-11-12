@@ -84,8 +84,39 @@ export const api = {
   },
 
   // Audit Log
-  getAudit: async (limit: number = 100): Promise<AuditResponse> => {
-    const res = await apiClient.get(`/audit?limit=${limit}`);
+  getAudit: async (params?: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    event_type?: string;
+    outcome?: string;
+    actor?: string;
+  } | number): Promise<AuditResponse> => {
+    if (typeof params === 'number') {
+      const res = await apiClient.get(`/audit?limit=${params}`);
+      return res.data;
+    }
+    const q = new URLSearchParams();
+    if (params?.limit !== undefined) q.append('limit', params.limit.toString());
+    if (params?.offset !== undefined) q.append('offset', params.offset.toString());
+    if (params?.search) q.append('search', params.search);
+    if (params?.event_type && params.event_type !== 'ALL') q.append('event_type', params.event_type);
+    if (params?.outcome && params.outcome !== 'ALL') q.append('outcome', params.outcome);
+    if (params?.actor && params.actor !== 'ALL') q.append('actor', params.actor);
+    const queryString = q.toString();
+    const res = await apiClient.get(queryString ? `/audit?${queryString}` : '/audit');
+    return res.data;
+  },
+  resealAuditChain: async (actor: string = 'admin'): Promise<{ status: string; resealed_count: number; repaired_count: number; reseal_event_id?: string; message: string }> => {
+    const res = await apiClient.post(`/audit/reseal?actor=${encodeURIComponent(actor)}`);
+    return res.data;
+  },
+  simulateTamper: async (target_index?: number): Promise<{ status: string; tampered_index: number; event_id: string; original_prev_hash: string; tampered_prev_hash: string; message: string }> => {
+    const res = await apiClient.post('/audit/simulate-tamper', { target_index });
+    return res.data;
+  },
+  restoreTamper: async (): Promise<{ status: string; resealed_count: number; repaired_count: number; reseal_event_id?: string; message: string }> => {
+    const res = await apiClient.post('/audit/restore');
     return res.data;
   },
 

@@ -95,7 +95,32 @@ class StateResponse(BaseModel):
 class AuditResponse(BaseModel):
     events: list[dict[str, Any]]
     chain_valid: bool
-    chain_break_index: int | None
+    chain_break_index: int | None = None
+    total_records: int = 0
+    filtered_count: int = 0
+    break_details: dict[str, Any] | None = None
+    stats: dict[str, Any] | None = None
+
+
+class ResealResponse(BaseModel):
+    status: str
+    resealed_count: int
+    repaired_count: int
+    reseal_event_id: str | None = None
+    message: str
+
+
+class TamperSimulationRequest(BaseModel):
+    target_index: int | None = None
+
+
+class TamperSimulationResponse(BaseModel):
+    status: str
+    tampered_index: int
+    event_id: str
+    original_prev_hash: str
+    tampered_prev_hash: str
+    message: str
 
 
 class MetricsResponse(BaseModel):

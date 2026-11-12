@@ -172,3 +172,53 @@ def test_device_keys_endpoint_and_state(client, admin_headers):
     assert dev_state["kem_fingerprint"] == data["kem_fingerprint"]
     assert dev_state["kem_public_key_hex"] == data["kem_public_key_hex"]
 
+
+def test_audit_endpoints_and_governance(client: TestClient):
+    """Test enhanced audit log endpoints, pagination, tamper simulation, and export."""
+    # 1. Test paginated audit query
+    res = client.get("/audit?limit=10&offset=0")
+    assert res.status_code == 200
+    data = res.json()
+    assert "events" in data
+    assert "chain_valid" in data
+    assert "total_records" in data
+    assert "stats" in data
+    assert len(data["events"]) <= 10
+    if len(data["events"]) > 0:
+        assert "current_hash" in data["events"][0]
+
+    # 2. Test CSV export
+    res_csv = client.get("/audit/export?format=csv")
+    assert res_csv.status_code == 200
+    assert "text/csv" in res_csv.headers["content-type"]
+    assert "Event ID,Timestamp (UTC)" in res_csv.text
+
+    # 3. Test JSON export
+    res_json = client.get("/audit/export?format=json")
+    assert res_json.status_code == 200
+    bundle = res_json.json()
+    assert "metadata" in bundle
+    assert "records" in bundle
+
+    # 4. Test simulate tamper and restore
+    tamper_res = client.post("/audit/simulate-tamper")
+    assert tamper_res.status_code == 200
+    tamper_data = tamper_res.json()
+    assert tamper_data["status"] == "tampered"
+
+    # Verify chain is invalid
+    verify_res = client.get("/audit?limit=5")
+    assert verify_res.status_code == 200
+    assert verify_res.json()["chain_valid"] is False
+
+    # Restore and reseal
+    restore_res = client.post("/audit/restore")
+    assert restore_res.status_code == 200
+    assert restore_res.json()["status"] == "restored"
+
+    # Verify chain is now valid
+    verify_after = client.get("/audit?limit=5")
+    assert verify_after.status_code == 200
+    assert verify_after.json()["chain_valid"] is True
+
+
