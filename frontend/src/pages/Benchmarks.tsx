@@ -710,17 +710,38 @@ export const Benchmarks: React.FC = () => {
 
             {/* Field Selector for Security Levels */}
             {activeStudy === 'security_levels' && (
-              <select
-                value={securityMetric}
-                onChange={(e) => setSecurityMetric(e.target.value as any)}
-                className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-teal-500 font-sans cursor-pointer"
-              >
-                <option value="handshake">Total Handshake Latency</option>
-                <option value="keygen">Key Generation</option>
-                <option value="encap">Key Encapsulation</option>
-                <option value="decap">Key Decapsulation</option>
-                <option value="keysize">Public Key Footprint (Bytes)</option>
-              </select>
+              <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px]">
+                <button
+                  onClick={() => setSecurityMetric('handshake')}
+                  className={`px-2 py-1 rounded transition-colors ${securityMetric === 'handshake' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                >
+                  Handshake
+                </button>
+                <button
+                  onClick={() => setSecurityMetric('keygen')}
+                  className={`px-2 py-1 rounded transition-colors ${securityMetric === 'keygen' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                >
+                  Keygen
+                </button>
+                <button
+                  onClick={() => setSecurityMetric('encap')}
+                  className={`px-2 py-1 rounded transition-colors ${securityMetric === 'encap' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                >
+                  Encap
+                </button>
+                <button
+                  onClick={() => setSecurityMetric('decap')}
+                  className={`px-2 py-1 rounded transition-colors ${securityMetric === 'decap' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                >
+                  Decap
+                </button>
+                <button
+                  onClick={() => setSecurityMetric('keysize')}
+                  className={`px-2 py-1 rounded transition-colors ${securityMetric === 'keysize' ? 'bg-teal-600 text-white font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                >
+                  Key Footprint
+                </button>
+              </div>
             )}
 
             {/* Field Selector for Concurrency */}
