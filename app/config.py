@@ -53,3 +53,8 @@ BENCH_WARMUP: int = int(os.environ.get("BENCH_WARMUP", "50"))
 BENCH_TRIALS: int = int(os.environ.get("BENCH_TRIALS", "1000"))
 BENCH_PAYLOAD_SIZES: list[int] = [128, 1024, 10240]   # bytes
 BENCH_SIG_PAYLOAD_SIZES: list[int] = [1024, 10240]    # for signature scaling
+
+# ─── JWT Authentication ───────────────────────────────────────────────────────
+JWT_SECRET: str = os.environ.get("JWT_SECRET", "pqkms-jwt-secret-change-in-production-2024")
+JWT_ALGORITHM: str = "HS256"
+JWT_EXPIRE_MINUTES: int = int(os.environ.get("JWT_EXPIRE_MINUTES", "480"))  # 8 hours

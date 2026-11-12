@@ -122,6 +122,20 @@ class Database:
                     PRIMARY KEY (run_id, operation, algorithm, trial)
                 )
             """)
+            # User accounts for dashboard authentication
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id TEXT PRIMARY KEY,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    full_name TEXT NOT NULL,
+                    role TEXT NOT NULL CHECK(role IN ('admin','doctor','auditor')),
+                    department TEXT,
+                    created_at TEXT NOT NULL,
+                    last_login TEXT,
+                    is_active INTEGER NOT NULL DEFAULT 1
+                )
+            """)
 
     # ─── Device operations ──────────────────────────────────────────────
 
@@ -411,6 +425,41 @@ class Database:
                        GROUP BY operation, algorithm"""
                 )
             return [dict(r) for r in cur.fetchall()]
+
+    # ─── User operations ────────────────────────────────────────────────────────
+
+    def create_user(self, user_id: str, username: str, password_hash: str, full_name: str, role: str, department: str | None = None) -> None:
+        from datetime import datetime, timezone
+        with self.cursor() as cur:
+            cur.execute(
+                """INSERT INTO users (user_id, username, password_hash, full_name, role, department, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (user_id, username, password_hash, full_name, role, department,
+                 datetime.now(timezone.utc).isoformat()),
+            )
+
+    def get_user_by_username(self, username: str) -> dict | None:
+        with self.cursor() as cur:
+            cur.execute("SELECT * FROM users WHERE username = ?", (username,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def get_user_by_id(self, user_id: str) -> dict | None:
+        with self.cursor() as cur:
+            cur.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def get_all_users(self) -> list[dict]:
+        with self.cursor() as cur:
+            cur.execute("SELECT user_id, username, full_name, role, department, created_at, last_login, is_active FROM users ORDER BY created_at DESC")
+            return [dict(r) for r in cur.fetchall()]
+
+    def update_user_last_login(self, user_id: str) -> None:
+        from datetime import datetime, timezone
+        with self.cursor() as cur:
+            cur.execute("UPDATE users SET last_login = ? WHERE user_id = ?",
+                       (datetime.now(timezone.utc).isoformat(), user_id))
 
     # ─── Dashboard queries ───────────────────────────────────────────────
 

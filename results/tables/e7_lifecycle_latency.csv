@@ -1,0 +1,4 @@
+operation,mean_ms,sd_ms
+Session Rollover (Algorithm 4),0.139750865,0.020392336538434603
+CRL Generation & Signing (Algorithm 5),0.34475693,0.1828100221855331
+Verifier CRL Verification & Anti-Rollback,0.12964485,0.00922366267962462

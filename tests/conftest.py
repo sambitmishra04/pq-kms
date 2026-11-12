@@ -25,6 +25,7 @@ os.environ["DATABASE_PATH"] = "/tmp/test_pqkms.db"
 os.environ["SERVER_KEY_PATH"] = "/tmp/test_server_keys.json"
 os.environ["SESSION_LIFETIME_S"] = "3600"  # long for tests (override per-test where needed)
 os.environ["ADMIN_TOKEN"] = "test-admin-token"
+os.environ["ENABLE_ATTACK_LAB"] = "1"
 
 # Clean up any leftover test files
 Path("/tmp/test_pqkms.db").unlink(missing_ok=True)

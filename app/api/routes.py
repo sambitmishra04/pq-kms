@@ -298,17 +298,71 @@ def get_revocations():
     )
 
 
+# ─── GET /devices/{device_id}/keys ───────────────────────────────────────────
+
+@router.get("/devices/{device_id}/keys")
+@router.get("/api/devices/{device_id}/keys")
+def get_device_keys(device_id: str):
+    """Retrieve full post-quantum cryptographic public keys for a specific device."""
+    import hashlib
+    db = get_db()
+    dev = db.get_device(device_id)
+    if not dev:
+        raise HTTPException(status_code=404, detail=f"Device '{device_id}' not found")
+
+    kem_pk: bytes | None = dev.get("kem_public_key")
+    sig_pk: bytes | None = dev.get("sig_public_key")
+
+    return {
+        "device_id": device_id,
+        "status": dev.get("status"),
+        "role": dev.get("role"),
+        "enrolled_at": dev.get("enrolled_at"),
+        "kem_public_key_hex": kem_pk.hex() if kem_pk else None,
+        "kem_public_key_b64": base64.b64encode(kem_pk).decode() if kem_pk else None,
+        "kem_key_size_bytes": len(kem_pk) if kem_pk else 0,
+        "kem_fingerprint": hashlib.sha256(kem_pk).hexdigest() if kem_pk else None,
+        "sig_public_key_hex": sig_pk.hex() if sig_pk else None,
+        "sig_public_key_b64": base64.b64encode(sig_pk).decode() if sig_pk else None,
+        "sig_key_size_bytes": len(sig_pk) if sig_pk else 0,
+        "sig_fingerprint": hashlib.sha256(sig_pk).hexdigest() if sig_pk else None,
+    }
+
+
 # ─── GET /state ───────────────────────────────────────────────────────────────
 
 @router.get("/state", response_model=StateResponse)
 def get_state():
-    """Dashboard: real backend state (device + session metadata, never key material)."""
+    """Dashboard: real backend state (device + session metadata, verified public keys)."""
+    import hashlib
     summary = get_db().get_state_summary()
-    # Strip binary key blobs from device records before sending
     for d in summary["devices"]:
-        d.pop("kem_public_key", None)
-        d.pop("sig_public_key", None)
+        kem_pk = d.pop("kem_public_key", None)
+        sig_pk = d.pop("sig_public_key", None)
         d.pop("enrolment_code_hash", None)
+
+        if kem_pk:
+            d["kem_public_key_hex"] = kem_pk.hex()
+            d["kem_public_key_b64"] = base64.b64encode(kem_pk).decode()
+            d["kem_key_size_bytes"] = len(kem_pk)
+            d["kem_fingerprint"] = hashlib.sha256(kem_pk).hexdigest()
+        else:
+            d["kem_public_key_hex"] = None
+            d["kem_public_key_b64"] = None
+            d["kem_key_size_bytes"] = 0
+            d["kem_fingerprint"] = None
+
+        if sig_pk:
+            d["sig_public_key_hex"] = sig_pk.hex()
+            d["sig_public_key_b64"] = base64.b64encode(sig_pk).decode()
+            d["sig_key_size_bytes"] = len(sig_pk)
+            d["sig_fingerprint"] = hashlib.sha256(sig_pk).hexdigest()
+        else:
+            d["sig_public_key_hex"] = None
+            d["sig_public_key_b64"] = None
+            d["sig_key_size_bytes"] = 0
+            d["sig_fingerprint"] = None
+
     return StateResponse(**summary)
 
 

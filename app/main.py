@@ -12,8 +12,10 @@ import sys
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 # Ensure the liboqs shared library is found
 _oqs_lib = Path.home() / "_oqs" / "lib"
@@ -50,6 +52,19 @@ app.add_middleware(
 )
 
 app.include_router(router)
+
+from app.auth.routes import auth_router
+from app.api.dmfb_routes import dmfb_router
+from app.api.system_routes import system_router
+
+app.include_router(auth_router)
+app.include_router(dmfb_router)
+app.include_router(system_router)
+
+# Attack Lab is an isolated evaluation suite, excluded from standard hospital production server
+if os.environ.get("ENABLE_ATTACK_LAB", "0") == "1":
+    from app.api.attack_lab_routes import attack_lab_router
+    app.include_router(attack_lab_router)
 
 # ─── Server signing keypair (persisted across restarts for client pinning) ─────
 _server_sk: bytes | None = None
@@ -132,6 +147,25 @@ async def startup() -> None:
 async def shutdown() -> None:
     get_audit_logger().log("server", "SERVER_STOPPED", "INFO")
     print("[PQ-KMS] Shutdown complete.")
+
+
+# ─── Serve Built React UI (Production Unified Mode) ──────────────────────────
+_frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+if _frontend_dist.exists():
+    _assets_dir = _frontend_dist / "assets"
+    if _assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # Exclude core API endpoints from fallback
+        api_prefixes = ("api/", "state", "audit", "metrics", "revocations", "enrol", "register", "session", "message", "revoke", "devices", "docs", "redoc", "openapi.json")
+        if any(full_path == p or full_path.startswith(p + "/") for p in api_prefixes):
+            raise HTTPException(status_code=404, detail="API route not found")
+        file_path = _frontend_dist / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(_frontend_dist / "index.html")
 
 
 if __name__ == "__main__":

@@ -31,3 +31,5 @@ scipy>=1.14.0
 # === Build tools (for liboqs-python to compile liboqs C library) ===
 cmake
 ninja
+pyjwt>=2.9.0
+bcrypt>=4.2.0

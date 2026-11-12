@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#090d16] text-slate-100 antialiased font-sans;
+  }
+}
+
+/* Custom scrollbars for clean medical workstation look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Subtle glow effects */
+.glow-teal {
+  box-shadow: 0 0 20px -5px rgba(20, 184, 166, 0.25);
+}
+.glow-purple {
+  box-shadow: 0 0 20px -5px rgba(139, 92, 246, 0.25);
+}
+.glow-red {
+  box-shadow: 0 0 20px -5px rgba(239, 68, 68, 0.25);
+}
