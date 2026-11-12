@@ -8,7 +8,6 @@ import {
   Filter,
   Download,
   Layers,
-  Lock,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -288,42 +287,24 @@ export const AuditLog: React.FC = () => {
       </div>
 
       {/* KPI Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           title="Total Ledger Records"
           value={totalRecords.toLocaleString()}
-          subtitle="FDA 21 CFR Part 11 electronic records"
-          trend="Append-Only Chain"
           variant="teal"
           icon={<Layers className="w-5 h-5" />}
         />
         <StatCard
           title="Hash Chain Integrity"
           value={auditData?.chain_valid ? '100% INTACT' : 'COMPROMISED'}
-          subtitle={
-            auditData?.chain_valid
-              ? 'Sequential SHA-256 links verified'
-              : `Discontinuity at index #${auditData?.chain_break_index}`
-          }
-          trend={auditData?.chain_valid ? 'Valid Proof' : 'Action Required'}
           variant={auditData?.chain_valid ? 'teal' : 'crimson'}
           icon={auditData?.chain_valid ? <ShieldCheck className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
         />
         <StatCard
           title="Security Enforcements"
           value={`${stats.REJECTED || 0} Blocked`}
-          subtitle={`${stats.ACCEPTED || 0} Accepted biochip frames`}
-          trend="Active Protection"
           variant="amber"
           icon={<ShieldAlert className="w-5 h-5" />}
-        />
-        <StatCard
-          title="Cryptographic Architecture"
-          value="FIPS 203 / 204"
-          subtitle="ML-KEM-768 • ML-DSA-65 sealed"
-          trend="Quantum-Safe"
-          variant="purple"
-          icon={<Lock className="w-5 h-5" />}
         />
       </div>
 
