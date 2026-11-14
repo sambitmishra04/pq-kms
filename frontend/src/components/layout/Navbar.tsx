@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -12,17 +12,37 @@ import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../api/client';
 import type { SystemHealth } from '../../types';
 
+const formatUptime = (totalSeconds: number): string => {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+};
+
 export const Navbar: React.FC = () => {
   const { user, role, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [health, setHealth] = useState<SystemHealth | null>(null);
+  const [uptimeStr, setUptimeStr] = useState<string>('');
+  const uptimeRef = useRef<{ baseSeconds: number; fetchedAt: number } | null>(null);
 
   useEffect(() => {
     const fetchHealth = async () => {
       try {
         const data = await api.getHealth();
         setHealth(data);
+        if (typeof data.uptime_seconds === 'number') {
+          uptimeRef.current = {
+            baseSeconds: data.uptime_seconds,
+            fetchedAt: Date.now(),
+          };
+          setUptimeStr(formatUptime(data.uptime_seconds));
+        } else if (data.uptime) {
+          setUptimeStr(data.uptime);
+        }
       } catch {
         // Backend health ping
       }
@@ -30,6 +50,17 @@ export const Navbar: React.FC = () => {
     fetchHealth();
     const interval = setInterval(fetchHealth, 12000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (uptimeRef.current) {
+        const elapsed = Math.floor((Date.now() - uptimeRef.current.fetchedAt) / 1000);
+        const total = uptimeRef.current.baseSeconds + elapsed;
+        setUptimeStr(formatUptime(total));
+      }
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const handleLogout = () => {
@@ -79,6 +110,9 @@ export const Navbar: React.FC = () => {
           <div className="text-right hidden sm:block">
             <p className="text-xs font-semibold text-slate-900 dark:text-slate-200 leading-tight">
               {user?.full_name || 'Authenticated Operator'}
+            </p>
+            <p className="text-[11px] font-mono tabular-nums text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+              uptime: {uptimeStr || '--:--:--'}
             </p>
           </div>
           <div className="w-8 h-8 rounded-full bg-teal-50 dark:bg-slate-800 border border-teal-200 dark:border-slate-700 flex items-center justify-center text-teal-700 dark:text-slate-300 shadow-xs">

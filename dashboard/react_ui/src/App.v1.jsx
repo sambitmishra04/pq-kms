@@ -924,7 +924,7 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                   <Icons.key size={18} style={{ color: '#15803d' }} />
                   <h3 style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a' }}>
-                    Perfect Forward Secrecy & Ephemeral Security
+                    Perfect Forward Secrecy & Session Security
                   </h3>
                 </div>
                 <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.6, marginBottom: 14 }}>

@@ -47,7 +47,7 @@ class AttackLab:
         falsified_glucose: float = 110.0,
     ) -> Dict[str, Any]:
         """
-        Ali et al. [1] glucose assay result manipulation attack.
+        Glucose assay result manipulation attack simulation.
         An attacker in the middle intercepts the wireless transmission from the DMFB
         and alters a true 220 mg/dL (hyperglycemia requiring insulin) into 110 mg/dL
         (normal, leading to withheld medical treatment).
@@ -59,7 +59,7 @@ class AttackLab:
             chip.execute_step(s)
         sensor_data = chip.read_optical_sensor()
 
-        # 2. Unprotected scenario (Legacy DMFB like Yao et al. PortableLab with CRC or ECB)
+        # 2. Unprotected scenario (Legacy Biochip with CRC or ECB)
         unprotected_intercepted = copy.deepcopy(sensor_data)
         unprotected_intercepted["glucose_mg_dl"] = falsified_glucose
         unprotected_intercepted["clinical_status"] = "NORMAL_FASTING (Falsified!)"
@@ -117,7 +117,7 @@ class AttackLab:
                 event_type="TAMPER_ATTACK_BLOCKED",
                 outcome="REJECTED",
                 device_id=device_id,
-                details=f"Ali et al. Glucose Tamper detected. Tag check failed.",
+                details="Glucose Tamper detected. Tag check failed.",
             )
 
         pqkms_result = {
@@ -129,7 +129,7 @@ class AttackLab:
         }
 
         return {
-            "attack_type": "Glucose Assay Result Tampering (Ali et al. [1])",
+            "attack_type": "Glucose Assay Result Tampering",
             "true_glucose": true_glucose,
             "attacker_injected_glucose": falsified_glucose,
             "unprotected_system": unprotected_result,

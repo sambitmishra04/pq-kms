@@ -78,6 +78,9 @@ class Database:
                     last_counter INTEGER NOT NULL DEFAULT 0
                 )
             """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_state ON sessions(state)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_created_at ON sessions(created_at)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_device_id ON sessions(device_id)")
             # Per-message outcomes (accepted/rejected, no plaintext)
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS messages (
@@ -255,6 +258,80 @@ class Database:
                 (device_id,),
             )
             return [dict(r) for r in cur.fetchall()]
+
+    def get_paginated_sessions(
+        self,
+        search: str | None = None,
+        state: str | None = None,
+        device_id: str | None = None,
+        page: int = 1,
+        page_size: int = 25,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
+    ) -> dict:
+        allowed_sort = {"created_at", "expires_at", "msg_count", "last_counter", "device_id", "state"}
+        sort_col = sort_by if sort_by in allowed_sort else "created_at"
+        order_dir = "DESC" if sort_order.lower() == "desc" else "ASC"
+        page = max(1, page)
+        page_size = max(1, min(200, page_size))
+        offset = (page - 1) * page_size
+
+        conditions = []
+        params = []
+        if state and state.upper() != "ALL":
+            conditions.append("state = ?")
+            params.append(state.upper())
+        if device_id:
+            conditions.append("device_id = ?")
+            params.append(device_id)
+        if search and search.strip():
+            s = f"%{search.strip()}%"
+            conditions.append("(session_id LIKE ? OR key_id LIKE ? OR device_id LIKE ?)")
+            params.extend([s, s, s])
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+        with self.cursor() as cur:
+            cur.execute(f"SELECT COUNT(*) as count FROM sessions {where_clause}", params)
+            total = cur.fetchone()["count"]
+
+            cur.execute(
+                f"SELECT * FROM sessions {where_clause} ORDER BY {sort_col} {order_dir} LIMIT ? OFFSET ?",
+                params + [page_size, offset],
+            )
+            rows = [dict(r) for r in cur.fetchall()]
+
+        total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+        return {
+            "sessions": rows,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+        }
+
+    def get_session_lifecycle_stats(self) -> dict:
+        with self.cursor() as cur:
+            cur.execute("SELECT state, COUNT(*) as count FROM sessions GROUP BY state")
+            counts = {r["state"]: r["count"] for r in cur.fetchall()}
+            cur.execute("SELECT COUNT(*) as count FROM sessions")
+            total = cur.fetchone()["count"]
+            cur.execute("SELECT COUNT(DISTINCT device_id) as count FROM sessions WHERE state = 'ACTIVE'")
+            active_devices = cur.fetchone()["count"]
+            return {
+                "total": total,
+                "created": 0,
+                "active": counts.get("ACTIVE", 0),
+                "deactivated": counts.get("DEACTIVATED", 0),
+                "destroyed": counts.get("DESTROYED", 0),
+                "compromised": counts.get("COMPROMISED", 0),
+                "active_devices": active_devices,
+            }
+
+    def purge_destroyed_sessions(self) -> int:
+        with self.cursor() as cur:
+            cur.execute("DELETE FROM sessions WHERE state = 'DESTROYED'")
+            return cur.rowcount
 
     # ─── Message operations ─────────────────────────────────────────────
 

@@ -36,6 +36,88 @@ export interface Session {
   state: 'CREATED' | 'ACTIVE' | 'DEACTIVATED' | 'COMPROMISED' | 'DESTROYED';
   msg_count: number;
   last_counter: number;
+  is_expired?: boolean;
+  time_remaining_s?: number;
+  in_transient_ram?: boolean;
+  progress_pct?: number;
+}
+
+export interface SessionStats {
+  total: number;
+  created: number;
+  active: number;
+  deactivated: number;
+  destroyed: number;
+  compromised: number;
+  active_devices: number;
+}
+
+export interface SessionMemoryStatus {
+  volatile_keys_in_ram: number;
+  active_keys_in_ram: number;
+  deactivated_in_ram: number;
+  valid_keys_in_ram: number;
+  disk_key_material_stored: boolean;
+  isolation_model: string;
+  zeroization_guarantee: string;
+}
+
+export interface SessionListResponse {
+  sessions: Session[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  stats: SessionStats;
+  memory_status: SessionMemoryStatus;
+}
+
+export interface SessionDetail {
+  session_id: string;
+  key_id: string;
+  device_id: string;
+  created_at: string;
+  expires_at: string;
+  state: 'CREATED' | 'ACTIVE' | 'DEACTIVATED' | 'COMPROMISED' | 'DESTROYED';
+  msg_count: number;
+  last_counter: number;
+  next_expected_counter: number;
+  is_expired: boolean;
+  time_remaining_s: number;
+  deactivated_at?: string | null;
+  grace_remaining_s: number;
+  in_transient_ram: boolean;
+  key_byte_length: number;
+  cipher_suite: string;
+  kem_primitive: string;
+  sig_primitive: string;
+  kdf_primitive: string;
+  device_status?: string | null;
+  device_role?: string | null;
+  audit_events: Array<{
+    event_id: string;
+    time: string;
+    actor: string;
+    event_type: string;
+    device_id?: string;
+    outcome: string;
+    details?: string;
+  }>;
+}
+
+export interface SessionActionResponse {
+  status: string;
+  session_id: string;
+  action: string;
+  message: string;
+  details?: Record<string, any>;
+}
+
+export interface BulkSessionActionResponse {
+  status: string;
+  action: string;
+  affected_count: number;
+  message: string;
 }
 
 export interface AuditBreakDetails {
@@ -214,3 +296,76 @@ export interface FullAssayResult {
   sensor_reading: OpticalSensorReading;
   final_state: BiochipSnapshot;
 }
+
+// ─── Clinician Diagnostic Portal Types ────────────────────────────────────────
+
+export interface VitalReading {
+  timestamp: string;
+  glucose_mg_dl: number;
+}
+
+export interface PatientRecord {
+  patient_id: string;
+  name: string;
+  age: number;
+  gender: string;
+  device_id: string;
+  device_status: string;
+  glucose_mg_dl: number;
+  blood_pressure: string;
+  systolic_bp: number;
+  diastolic_bp: number;
+  heart_rate: number;
+  spo2: number;
+  temperature_c: number;
+  insulin_u_ml: number;
+  bmi: number;
+  last_assay_time: string;
+  clinical_indication: string;
+  status: 'STABLE' | 'WARNING' | 'CRITICAL';
+  session_id?: string;
+  session_state?: string;
+  message_counter: number;
+  aead_cipher: string;
+  kem_algorithm: string;
+  sig_algorithm: string;
+  crypto_verified: boolean;
+  crypto_status_text: string;
+  is_tampered: boolean;
+  tamper_alert?: string;
+  acknowledged: boolean;
+  acknowledged_by?: string;
+  acknowledged_at?: string;
+  last_intervention?: string;
+  history: VitalReading[];
+}
+
+export interface PatientListResponse {
+  patients: PatientRecord[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  summary: {
+    total_patients: number;
+    critical_count: number;
+    warning_count: number;
+    stable_count: number;
+    active_biochips: number;
+    revoked_biochips: number;
+  };
+}
+
+export interface ClinicianTamperResult {
+  patient_id: string;
+  device_id: string;
+  is_tampered: boolean;
+  true_glucose: number;
+  falsified_glucose: number;
+  pqc_aead_status: string;
+  tamper_detected: boolean;
+  error_detail: string;
+  clinical_consequence: string;
+  audit_event_id: string;
+}
+

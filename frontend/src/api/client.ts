@@ -10,6 +10,14 @@ import type {
   User,
   FullAssayResult,
   BiochipSnapshot,
+  SessionListResponse,
+  SessionDetail,
+  SessionActionResponse,
+  BulkSessionActionResponse,
+  SessionMemoryStatus,
+  PatientRecord,
+  PatientListResponse,
+  ClinicianTamperResult,
 } from '../types';
 
 const API_BASE = ''; // Relative URLs will be proxied by Vite or handled directly
@@ -83,6 +91,57 @@ export const api = {
     return res.data;
   },
 
+  // Session Key Lifecycle Governance
+  getSessions: async (params?: {
+    search?: string;
+    state?: string;
+    device_id?: string;
+    page?: number;
+    page_size?: number;
+    sort_by?: string;
+    sort_order?: string;
+  }): Promise<SessionListResponse> => {
+    const q = new URLSearchParams();
+    if (params?.search) q.append('search', params.search);
+    if (params?.state && params.state !== 'ALL') q.append('state', params.state);
+    if (params?.device_id) q.append('device_id', params.device_id);
+    if (params?.page !== undefined) q.append('page', params.page.toString());
+    if (params?.page_size !== undefined) q.append('page_size', params.page_size.toString());
+    if (params?.sort_by) q.append('sort_by', params.sort_by);
+    if (params?.sort_order) q.append('sort_order', params.sort_order);
+    const queryString = q.toString();
+    const res = await apiClient.get(queryString ? `/api/sessions?${queryString}` : '/api/sessions');
+    return res.data;
+  },
+  getSessionDetails: async (sessionId: string): Promise<SessionDetail> => {
+    const res = await apiClient.get(`/api/sessions/${encodeURIComponent(sessionId)}/details`);
+    return res.data;
+  },
+  rotateSession: async (sessionId: string): Promise<SessionActionResponse> => {
+    const res = await apiClient.post(`/api/sessions/${encodeURIComponent(sessionId)}/rotate`);
+    return res.data;
+  },
+  deactivateSession: async (sessionId: string): Promise<SessionActionResponse> => {
+    const res = await apiClient.post(`/api/sessions/${encodeURIComponent(sessionId)}/deactivate`);
+    return res.data;
+  },
+  destroySession: async (sessionId: string): Promise<SessionActionResponse> => {
+    const res = await apiClient.post(`/api/sessions/${encodeURIComponent(sessionId)}/destroy`);
+    return res.data;
+  },
+  bulkRotateExpired: async (): Promise<BulkSessionActionResponse> => {
+    const res = await apiClient.post('/api/sessions/bulk-rotate-expired');
+    return res.data;
+  },
+  purgeDestroyedSessions: async (): Promise<BulkSessionActionResponse> => {
+    const res = await apiClient.post('/api/sessions/purge-destroyed');
+    return res.data;
+  },
+  getSessionMemoryStatus: async (): Promise<SessionMemoryStatus> => {
+    const res = await apiClient.get('/api/sessions/memory-status');
+    return res.data;
+  },
+
   // Audit Log
   getAudit: async (params?: {
     limit?: number;
@@ -143,6 +202,52 @@ export const api = {
   },
   getDmfbState: async (): Promise<BiochipSnapshot> => {
     const res = await apiClient.get('/api/dmfb/state');
+    return res.data;
+  },
+
+  // Clinician Telemetry & Diagnostic Portal
+  getClinicianPatients: async (params?: {
+    search?: string;
+    status?: string;
+    device_status?: string;
+    page?: number;
+    page_size?: number;
+  }): Promise<PatientListResponse> => {
+    const q = new URLSearchParams();
+    if (params?.search) q.append('search', params.search);
+    if (params?.status && params.status !== 'ALL') q.append('status', params.status);
+    if (params?.device_status && params.device_status !== 'ALL') q.append('device_status', params.device_status);
+    if (params?.page !== undefined) q.append('page', params.page.toString());
+    if (params?.page_size !== undefined) q.append('page_size', params.page_size.toString());
+    const queryString = q.toString();
+    const res = await apiClient.get(queryString ? `/api/clinician/patients?${queryString}` : '/api/clinician/patients');
+    return res.data;
+  },
+  getClinicianPatientDetail: async (patientId: string): Promise<PatientRecord> => {
+    const res = await apiClient.get(`/api/clinician/patients/${encodeURIComponent(patientId)}`);
+    return res.data;
+  },
+  acknowledgePatientReading: async (patientId: string, note?: string): Promise<{ status: string; patient_id: string; audit_event_id: string }> => {
+    const res = await apiClient.post(`/api/clinician/patients/${encodeURIComponent(patientId)}/acknowledge`, { note });
+    return res.data;
+  },
+  orderClinicalIntervention: async (
+    patientId: string,
+    payload: { protocol: string; dosage?: string; notes?: string }
+  ): Promise<{ status: string; patient_id: string; protocol: string; audit_event_id: string }> => {
+    const res = await apiClient.post(`/api/clinician/patients/${encodeURIComponent(patientId)}/intervention`, payload);
+    return res.data;
+  },
+  rerunBioassay: async (patientId: string): Promise<{ status: string; patient: PatientRecord; steps: any[]; sensor_reading: any; audit_event_id: string }> => {
+    const res = await apiClient.post(`/api/clinician/patients/${encodeURIComponent(patientId)}/re-run-assay`);
+    return res.data;
+  },
+  simulateClinicianTamper: async (patientId: string): Promise<ClinicianTamperResult> => {
+    const res = await apiClient.post(`/api/clinician/patients/${encodeURIComponent(patientId)}/simulate-tamper`);
+    return res.data;
+  },
+  resetClinicianTamper: async (patientId: string): Promise<PatientRecord> => {
+    const res = await apiClient.post(`/api/clinician/patients/${encodeURIComponent(patientId)}/reset-tamper`);
     return res.data;
   },
 };

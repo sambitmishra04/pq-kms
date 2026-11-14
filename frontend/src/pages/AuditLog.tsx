@@ -34,6 +34,29 @@ import { StatCard } from '../components/common/StatCard';
 import { Modal } from '../components/common/Modal';
 import type { AuditResponse, AuditEvent, AuditBreakDetails } from '../types';
 
+export const sanitizeAuditText = (text?: string): string => {
+  if (!text) return '';
+  return text
+    // Researcher citations (e.g. Ali et al., Guo et al., Yao et al., [Name] et al., et al.)
+    .replace(/(?:Ali|Guo|Yao|[A-Z][a-z]+)\s+et\s+al\.?/gi, '')
+    .replace(/\bet\s+al\.?/gi, '')
+    .replace(/\[\d+\]/g, '')
+    // Regulatory and standards bodies / identifiers
+    .replace(/FDA(\s+21\s+CFR(\s+Part\s+11)?)?/gi, '')
+    .replace(/21\s+CFR(\s+Part\s+11)?/gi, '')
+    .replace(/NIST(\s+SP|\s+FIPS|\s+[A-Z0-9-]+)*/gi, '')
+    .replace(/FIPS(\s+[0-9-]+)*/gi, '')
+    .replace(/ISO(\s+[0-9-]+)*/gi, '')
+    .replace(/IEEE(\s+[0-9.-]+)*/gi, '')
+    .replace(/RFC(\s+[0-9]+)*/gi, '')
+    // Clean up empty parentheses, extra punctuation, spaces
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^\s*[,.;:\-]\s*/, '')
+    .replace(/\s*[,.;:\-]\s*$/, '')
+    .trim();
+};
+
 export const AuditLog: React.FC = () => {
   const [auditData, setAuditData] = useState<AuditResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -167,7 +190,7 @@ export const AuditLog: React.FC = () => {
     const url = `/api/audit/export?format=${format}`;
     const a = document.createElement('a');
     a.href = url;
-    a.download = format === 'csv' ? 'audit_ledger_21cfr11.csv' : 'audit_ledger_forensics.json';
+    a.download = format === 'csv' ? 'audit_ledger_report.csv' : 'audit_ledger_forensics.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -240,7 +263,7 @@ export const AuditLog: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            <ScrollText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> Tamper-Evident Forensic Audit Trail
+            <ScrollText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> Forensic Audit Trail
           </h1>
         </div>
 
@@ -260,7 +283,7 @@ export const AuditLog: React.FC = () => {
             <button
               onClick={() => handleExport('csv')}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium border-r border-slate-200 dark:border-slate-700 transition-colors"
-              title="Download official FDA 21 CFR Part 11 compliant CSV report"
+              title="Download official audit CSV report"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Export CSV</span>
@@ -306,65 +329,6 @@ export const AuditLog: React.FC = () => {
           variant="amber"
           icon={<ShieldAlert className="w-5 h-5" />}
         />
-      </div>
-
-      {/* Hash Chain Integrity Banner */}
-      <div
-        className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
-          auditData?.chain_valid
-            ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-500/50 text-emerald-800 dark:text-emerald-200'
-            : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/80 text-rose-800 dark:text-rose-200'
-        }`}
-      >
-        <div className="flex items-start gap-3.5">
-          <div className={`p-2.5 rounded-lg shrink-0 ${auditData?.chain_valid ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400'}`}>
-            {auditData?.chain_valid ? <ShieldCheck className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
-          </div>
-          <div>
-            <h3 className="text-sm font-bold flex items-center gap-2">
-              {auditData?.chain_valid
-                ? 'Cryptographic Hash Chain: 100% INTACT & VERIFIED'
-                : 'SECURITY ALERT: Audit Chain Integrity Broken!'}
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-mono leading-relaxed">
-              {auditData?.chain_valid
-                ? `Every record's prev_hash verified up to genesis block across ${totalRecords} chronological events.`
-                : `Tampering detected at ledger sequence index #${auditData?.chain_break_index}. ${
-                    breakDetails?.reason || 'Record hash does not match predecessor SHA-256 digest.'
-                  }`}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 self-end md:self-auto shrink-0">
-          {!auditData?.chain_valid && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setDiscontinuityModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition-colors"
-              >
-                <Eye className="w-3.5 h-3.5" />
-                <span>Inspect Discontinuity</span>
-              </button>
-              <button
-                onClick={() => setResealModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-xs transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Reseal Chain</span>
-              </button>
-            </div>
-          )}
-
-          <div className="text-right pl-3 border-l border-slate-200 dark:border-slate-700 hidden sm:block">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
-              GENESIS SEED
-            </span>
-            <span className="font-mono text-xs text-slate-600 dark:text-slate-300 font-semibold">
-              00000000...0000
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -527,8 +491,8 @@ export const AuditLog: React.FC = () => {
                       <td className="py-3 px-4 whitespace-nowrap">
                         <Badge status={evt.outcome}>{evt.outcome}</Badge>
                       </td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-300 text-[11px] max-w-xs truncate" title={evt.details}>
-                        {evt.details || '—'}
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-300 text-[11px] max-w-xs truncate" title={sanitizeAuditText(evt.details)}>
+                        {sanitizeAuditText(evt.details) || '—'}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         <CopyBadge text={evt.prev_hash} truncateLength={4} />
@@ -687,7 +651,7 @@ export const AuditLog: React.FC = () => {
             <div className="space-y-1.5">
               <span className="text-[11px] font-semibold text-slate-500 font-mono">CRYPTOGRAPHIC DETAILS & PAYLOAD</span>
               <div className="p-3 rounded-lg bg-slate-100 dark:bg-[#0d131f] border border-slate-200 dark:border-slate-800 font-mono text-xs text-slate-800 dark:text-slate-200 break-all leading-relaxed">
-                {selectedBlock.details || '—'}
+                {sanitizeAuditText(selectedBlock.details) || '—'}
               </div>
             </div>
 
@@ -813,7 +777,7 @@ export const AuditLog: React.FC = () => {
                 <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
                   <span className="text-slate-400 block mb-1">RECORDED PAYLOAD:</span>
                   <div className="p-1.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 break-all">
-                    {breakDetails.details}
+                    {sanitizeAuditText(breakDetails.details)}
                   </div>
                 </div>
               )}
@@ -871,10 +835,6 @@ export const AuditLog: React.FC = () => {
             <div className="flex justify-between">
               <span className="text-slate-400">Authorizing Operator:</span>
               <span className="font-bold text-purple-600 dark:text-purple-400">System Administrator</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Standard Compliance:</span>
-              <span className="text-slate-700 dark:text-slate-300">FDA 21 CFR Part 11</span>
             </div>
           </div>
 

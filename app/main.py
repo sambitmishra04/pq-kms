@@ -56,10 +56,12 @@ app.include_router(router)
 from app.auth.routes import auth_router
 from app.api.dmfb_routes import dmfb_router
 from app.api.system_routes import system_router
+from app.api.clinician_routes import clinician_router
 
 app.include_router(auth_router)
 app.include_router(dmfb_router)
 app.include_router(system_router)
+app.include_router(clinician_router)
 
 # Attack Lab is an isolated evaluation suite, excluded from standard hospital production server
 if os.environ.get("ENABLE_ATTACK_LAB", "0") == "1":
@@ -159,8 +161,8 @@ if _frontend_dist.exists():
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         # Exclude core API endpoints from fallback
-        api_prefixes = ("api/", "state", "audit", "metrics", "revocations", "enrol", "register", "session", "message", "revoke", "devices", "docs", "redoc", "openapi.json")
-        if any(full_path == p or full_path.startswith(p + "/") for p in api_prefixes):
+        api_prefixes = ("api/", "state", "audit", "metrics", "revocations", "enrol", "register", "session", "sessions", "message", "revoke", "devices", "docs", "redoc", "openapi.json")
+        if any(full_path == p or full_path.startswith(p if p.endswith("/") else p + "/") for p in api_prefixes):
             raise HTTPException(status_code=404, detail="API route not found")
         file_path = _frontend_dist / full_path
         if file_path.is_file():

@@ -6,7 +6,6 @@ import {
   CheckCircle,
   AlertTriangle,
   RefreshCw,
-  FileCheck,
   Ban,
   Fingerprint,
   Copy,
@@ -58,7 +57,7 @@ export const DeviceManagement: React.FC = () => {
   const [newDeviceRole, setNewDeviceRole] = useState<'device' | 'admin'>('device');
   const [newDepartment, setNewDepartment] = useState('ICU Point-of-Care');
   const [newHardwareSpec, setNewHardwareSpec] = useState('2D EWOD 16x16 Electrowetting Array');
-  const [deliveryChannel, setDeliveryChannel] = useState<'flashing' | 'nfc' | 'voucher'>('nfc');
+  const deliveryChannel = 'direct';
   const [enrolResult, setEnrolResult] = useState<{
     code: string;
     deviceId: string;
@@ -283,9 +282,6 @@ export const DeviceManagement: React.FC = () => {
           <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
             <Cpu className="w-5 h-5 text-teal-600 dark:text-teal-400" /> Edge Biochip Fleet Registry
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            One-time token provisioning, cryptographic proof-of-possession verification, and dynamic revocation certificate distribution.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -346,38 +342,6 @@ export const DeviceManagement: React.FC = () => {
           variant="amber"
         />
       </div>
-
-      {/* Active CRL Status Banner */}
-      {crl && (
-        <div className="p-4 rounded-xl bg-purple-50/80 dark:bg-[#0f1728] border border-purple-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-purple-700 dark:text-purple-400 shrink-0">
-              <FileCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-200">
-                  Active Certificate Revocation List (CRL)
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800/60 font-semibold">
-                  v{crl.version}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Issued: {new Date(crl.issued_at).toLocaleString()} • {crl.device_ids.length} revoked node(s) listed
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <CopyBadge
-              text={crl.signature_hex}
-              label="Auth Signature"
-              truncateLength={8}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Fleet Controls: Search Bar & Segmented Filters */}
       <div className="bg-white dark:bg-[#101726] border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-sm space-y-3">
@@ -881,48 +845,6 @@ export const DeviceManagement: React.FC = () => {
                     <option value="Point-of-Care Biosensor Cartridge">Point-of-Care Biosensor Cartridge</option>
                   </select>
                 </div>
-              </div>
-            </div>
-
-            {/* Out-of-band delivery method */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase font-mono mb-1">
-                Out-of-Band Delivery Channel
-              </label>
-              <div className="grid grid-cols-3 gap-2 text-[11px] font-mono">
-                <button
-                  type="button"
-                  onClick={() => setDeliveryChannel('nfc')}
-                  className={`p-2 rounded-lg border text-center transition-colors ${
-                    deliveryChannel === 'nfc'
-                      ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500 text-teal-700 dark:text-teal-300 font-semibold'
-                      : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  📶 NFC Tap / BLE
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeliveryChannel('flashing')}
-                  className={`p-2 rounded-lg border text-center transition-colors ${
-                    deliveryChannel === 'flashing'
-                      ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500 text-teal-700 dark:text-teal-300 font-semibold'
-                      : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  🔌 Direct USB-C Flashing
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeliveryChannel('voucher')}
-                  className={`p-2 rounded-lg border text-center transition-colors ${
-                    deliveryChannel === 'voucher'
-                      ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500 text-teal-700 dark:text-teal-300 font-semibold'
-                      : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  📄 Optical Escrow Voucher
-                </button>
               </div>
             </div>
 

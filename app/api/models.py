@@ -125,3 +125,69 @@ class TamperSimulationResponse(BaseModel):
 
 class MetricsResponse(BaseModel):
     benchmark_stats: list[dict[str, Any]]
+
+
+class SessionItem(BaseModel):
+    session_id: str
+    key_id: str
+    device_id: str
+    created_at: str
+    expires_at: str
+    state: str
+    msg_count: int
+    last_counter: int
+    is_expired: bool = False
+    time_remaining_s: int = 0
+    in_transient_ram: bool = True
+    progress_pct: float = 0.0
+
+
+class SessionListResponse(BaseModel):
+    sessions: list[SessionItem]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+    stats: dict[str, Any]
+    memory_status: dict[str, Any]
+
+
+class SessionDetailResponse(BaseModel):
+    session_id: str
+    key_id: str
+    device_id: str
+    created_at: str
+    expires_at: str
+    state: str
+    msg_count: int
+    last_counter: int
+    next_expected_counter: int
+    is_expired: bool
+    time_remaining_s: int
+    deactivated_at: str | None = None
+    grace_remaining_s: int = 0
+    in_transient_ram: bool = True
+    key_byte_length: int = 32
+    cipher_suite: str = "AES-256-GCM"
+    kem_primitive: str = "ML-KEM-768"
+    sig_primitive: str = "ML-DSA-65"
+    kdf_primitive: str = "HKDF-SHA256"
+    device_status: str | None = None
+    device_role: str | None = None
+    audit_events: list[dict[str, Any]] = []
+
+
+class SessionActionResponse(BaseModel):
+    status: str
+    session_id: str
+    action: str
+    message: str
+    details: dict[str, Any] = {}
+
+
+class BulkSessionActionResponse(BaseModel):
+    status: str
+    action: str
+    affected_count: int
+    message: str
+

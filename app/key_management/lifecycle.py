@@ -283,6 +283,83 @@ class KeyLifecycleManager:
         with self._lock:
             return list(self._store.values())
 
+    def get_memory_status(self) -> dict:
+        with self._lock:
+            active_in_mem = sum(1 for e in self._store.values() if e.state == "ACTIVE")
+            deactivated_in_mem = sum(1 for e in self._store.values() if e.state == "DEACTIVATED")
+            total_in_mem = len(self._store)
+            keys_with_bytes = sum(1 for e in self._store.values() if bool(e.key_bytes))
+            return {
+                "volatile_keys_in_ram": total_in_mem,
+                "active_keys_in_ram": active_in_mem,
+                "deactivated_in_ram": deactivated_in_mem,
+                "valid_keys_in_ram": keys_with_bytes,
+                "disk_key_material_stored": False,
+                "isolation_model": "Transient Heap Isolation (Zero disk commit)",
+                "zeroization_guarantee": "NIST SP 800-88 in-place memory zeroization upon destruction",
+            }
+
+    def force_rotate_session(self, session_id: str) -> dict:
+        with self._lock:
+            entry = self._store.get(session_id)
+            db = get_db()
+            audit = get_audit_logger()
+
+            if entry is None:
+                db_session = db.get_session(session_id)
+                if db_session is None:
+                    raise ValueError(f"Session '{session_id}' not found")
+                device_id = db_session["device_id"]
+            else:
+                device_id = entry.device_id
+                self._deactivate_session_locked(entry)
+
+            db.update_session_state(session_id, "DEACTIVATED")
+            audit.log(
+                actor="admin",
+                event_type="SESSION_ROTATED",
+                outcome="ACCEPTED",
+                device_id=device_id,
+                details=f"session_id={session_id} reason=admin_manual_rotation",
+            )
+            return {
+                "status": "rotated",
+                "session_id": session_id,
+                "device_id": device_id,
+                "new_state": "DEACTIVATED",
+                "message": f"Session {session_id[:8]}... rotated. Transitioned to DEACTIVATED grace mode.",
+            }
+
+    def force_destroy_session(self, session_id: str) -> dict:
+        with self._lock:
+            entry = self._store.get(session_id)
+            db = get_db()
+            audit = get_audit_logger()
+
+            if entry is not None:
+                device_id = entry.device_id
+                self._destroy_session_locked(entry)
+            else:
+                db_session = db.get_session(session_id)
+                if db_session is None:
+                    raise ValueError(f"Session '{session_id}' not found")
+                device_id = db_session["device_id"]
+                db.update_session_state(session_id, "DESTROYED")
+                audit.log(
+                    actor="admin",
+                    event_type="SESSION_DESTROYED",
+                    outcome="ACCEPTED",
+                    device_id=device_id,
+                    details=f"session_id={session_id} reason=admin_manual_destroy",
+                )
+            return {
+                "status": "destroyed",
+                "session_id": session_id,
+                "device_id": device_id,
+                "new_state": "DESTROYED",
+                "message": f"Session {session_id[:8]}... destroyed and zeroized in RAM.",
+            }
+
 
 # Global lifecycle manager instance
 _lifecycle_manager: KeyLifecycleManager | None = None

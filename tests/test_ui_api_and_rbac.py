@@ -222,3 +222,118 @@ def test_audit_endpoints_and_governance(client: TestClient):
     assert verify_after.json()["chain_valid"] is True
 
 
+def test_session_lifecycle_and_governance_endpoints(client, admin_headers):
+    """Test the session pagination, memory status, inspection, and action endpoints."""
+    # 1. Test GET /sessions (paginated)
+    res = client.get("/sessions?page=1&page_size=10")
+    assert res.status_code == 200
+    data = res.json()
+    assert "sessions" in data
+    assert "total" in data
+    assert "stats" in data
+    assert "memory_status" in data
+    assert data["page"] == 1
+    assert data["page_size"] == 10
+
+    # 2. Test GET /sessions/memory-status
+    mem_res = client.get("/sessions/memory-status")
+    assert mem_res.status_code == 200
+    mem_data = mem_res.json()
+    assert "volatile_keys_in_ram" in mem_data
+    assert mem_data["disk_key_material_stored"] is False
+
+    # 3. If there is at least one session, test details and actions
+    if data["sessions"]:
+        target_sid = data["sessions"][0]["session_id"]
+
+        # Details
+        detail_res = client.get(f"/sessions/{target_sid}/details")
+        assert detail_res.status_code == 200
+        detail = detail_res.json()
+        assert detail["session_id"] == target_sid
+        assert "cipher_suite" in detail
+        assert "kem_primitive" in detail
+        assert "next_expected_counter" in detail
+
+        # Deactivate
+        deact_res = client.post(f"/sessions/{target_sid}/deactivate")
+        assert deact_res.status_code == 200
+        assert deact_res.json()["action"] == "deactivate"
+
+        # Destroy
+        destroy_res = client.post(f"/sessions/{target_sid}/destroy")
+        assert destroy_res.status_code == 200
+        assert destroy_res.json()["action"] == "destroy"
+
+    # 4. Bulk operations
+    bulk_res = client.post("/sessions/bulk-rotate-expired")
+    assert bulk_res.status_code == 200
+    assert bulk_res.json()["status"] == "success"
+
+    # Purge destroyed
+    purge_res = client.post("/sessions/purge-destroyed")
+    assert purge_res.status_code == 200
+    assert purge_res.json()["status"] == "success"
+
+
+def test_clinician_portal_endpoints(client):
+    """Test clinician patient listing, biochip telemetry, acknowledgment, intervention, assay re-run, and tamper."""
+    # 1. Listing patients with summary
+    res = client.get("/api/clinician/patients?page=1&page_size=10")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total"] > 100
+    assert len(data["patients"]) == 10
+    assert "summary" in data
+    assert data["summary"]["active_biochips"] > 0
+    first_patient = data["patients"][0]
+    pid = first_patient["patient_id"]
+    assert pid == "PAT-4821"
+    assert first_patient["name"] == "Eleanor Vance"
+    assert first_patient["device_id"] == "DMFB-ALPHA-POC"
+    assert first_patient["crypto_verified"] is True
+
+    # 2. Patient detail
+    detail_res = client.get(f"/api/clinician/patients/{pid}")
+    assert detail_res.status_code == 200
+    assert detail_res.json()["patient_id"] == pid
+
+    # 3. Acknowledge
+    ack_res = client.post(f"/api/clinician/patients/{pid}/acknowledge", json={"note": "Clinician reviewed"})
+    assert ack_res.status_code == 200
+    assert ack_res.json()["status"] == "success"
+    assert "audit_event_id" in ack_res.json()
+
+    # 4. Clinical intervention
+    inv_res = client.post(
+        f"/api/clinician/patients/{pid}/intervention",
+        json={"protocol": "Regular Insulin", "dosage": "8 Units SubQ", "notes": "Target glucose < 140"},
+    )
+    assert inv_res.status_code == 200
+    assert inv_res.json()["status"] == "dispatched"
+    assert "audit_event_id" in inv_res.json()
+
+    # 5. Re-run bioassay via DMFB digital twin simulator
+    rerun_res = client.post(f"/api/clinician/patients/{pid}/re-run-assay")
+    assert rerun_res.status_code == 200
+    assert rerun_res.json()["status"] == "success"
+    assert "sensor_reading" in rerun_res.json()
+    assert rerun_res.json()["sensor_reading"]["detected"] is True
+
+    # 6. Simulate MITM tamper on telemetry
+    tamper_res = client.post(f"/api/clinician/patients/{pid}/simulate-tamper")
+    assert tamper_res.status_code == 200
+    tamper_data = tamper_res.json()
+    assert tamper_data["is_tampered"] is True
+    assert tamper_data["tamper_detected"] is True
+    assert "audit_event_id" in tamper_data
+
+    # 7. Reset tamper
+    reset_res = client.post(f"/api/clinician/patients/{pid}/reset-tamper")
+    assert reset_res.status_code == 200
+    assert reset_res.json()["is_tampered"] is False
+    assert reset_res.json()["crypto_verified"] is True
+
+
+
+

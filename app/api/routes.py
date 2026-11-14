@@ -20,6 +20,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.models import (
     AuditResponse,
+    BulkSessionActionResponse,
     CRLResponse,
     EnrolRequest,
     EnrolResponse,
@@ -31,6 +32,10 @@ from app.api.models import (
     ResealResponse,
     RevokeRequest,
     RevokeResponse,
+    SessionActionResponse,
+    SessionDetailResponse,
+    SessionItem,
+    SessionListResponse,
     SessionRequest,
     SessionResponse,
     StateResponse,
@@ -372,6 +377,277 @@ def get_state():
     return StateResponse(**summary)
 
 
+# ─── Session Key Lifecycle Governance ──────────────────────────────────────────
+
+@router.get("/sessions", response_model=SessionListResponse)
+@router.get("/api/sessions", response_model=SessionListResponse)
+def get_sessions(
+    search: str | None = Query(None, description="Search by session_id, key_id, or device_id"),
+    state: str | None = Query(None, description="Filter by lifecycle state (ACTIVE, DEACTIVATED, DESTROYED, ALL)"),
+    device_id: str | None = Query(None, description="Filter by device_id"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(25, ge=1, le=200, description="Items per page"),
+    sort_by: str = Query("created_at", description="Field to sort by"),
+    sort_order: str = Query("desc", description="Sort order: asc or desc"),
+):
+    """
+    Paginated, searchable, filterable view of cryptographic sessions.
+    Computes real-time cryptoperiod countdowns, message quotas, and RAM isolation status.
+    """
+    from datetime import datetime, timezone
+    db = get_db()
+    lifecycle = get_lifecycle_manager()
+    now_ts = time.time()
+
+    paginated = db.get_paginated_sessions(
+        search=search,
+        state=state,
+        device_id=device_id,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
+
+    enriched_sessions = []
+    for s in paginated["sessions"]:
+        try:
+            exp_str = s["expires_at"].replace("Z", "+00:00")
+            exp_dt = datetime.fromisoformat(exp_str)
+            exp_ts = exp_dt.timestamp()
+            create_str = s["created_at"].replace("Z", "+00:00")
+            create_dt = datetime.fromisoformat(create_str)
+            create_ts = create_dt.timestamp()
+            total_duration = max(1.0, exp_ts - create_ts)
+            elapsed = max(0.0, now_ts - create_ts)
+            pct = min(100.0, max(0.0, (elapsed / total_duration) * 100.0))
+        except Exception:
+            exp_ts = now_ts + 60
+            pct = 0.0
+
+        is_exp = now_ts >= exp_ts
+        time_rem = max(0, int(exp_ts - now_ts)) if not is_exp else 0
+        in_ram = s["state"] in ("ACTIVE", "DEACTIVATED") and lifecycle.get_session_entry(s["session_id"]) is not None
+
+        enriched_sessions.append(
+            SessionItem(
+                session_id=s["session_id"],
+                key_id=s["key_id"],
+                device_id=s["device_id"],
+                created_at=s["created_at"],
+                expires_at=s["expires_at"],
+                state=s["state"],
+                msg_count=s["msg_count"],
+                last_counter=s["last_counter"],
+                is_expired=is_exp,
+                time_remaining_s=time_rem,
+                in_transient_ram=in_ram,
+                progress_pct=round(pct, 1),
+            )
+        )
+
+    stats = db.get_session_lifecycle_stats()
+    memory_status = lifecycle.get_memory_status()
+
+    return SessionListResponse(
+        sessions=enriched_sessions,
+        total=paginated["total"],
+        page=paginated["page"],
+        page_size=paginated["page_size"],
+        total_pages=paginated["total_pages"],
+        stats=stats,
+        memory_status=memory_status,
+    )
+
+
+@router.get("/sessions/{session_id}/details", response_model=SessionDetailResponse)
+@router.get("/api/sessions/{session_id}/details", response_model=SessionDetailResponse)
+def get_session_details(session_id: str):
+    """
+    Detailed cryptographic inspection of a session key.
+    Exposes KEM, KDF, AEAD, replay sequencing window, and audit linkages.
+    """
+    from datetime import datetime, timezone
+    from app.config import KEM_ALG, SIG_ALG, GRACE_WINDOW_S
+    db = get_db()
+    lifecycle = get_lifecycle_manager()
+    sess = db.get_session(session_id)
+    if sess is None:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+
+    entry = lifecycle.get_session_entry(session_id)
+    device = db.get_device(sess["device_id"])
+
+    now_ts = time.time()
+    try:
+        exp_dt = datetime.fromisoformat(sess["expires_at"].replace("Z", "+00:00"))
+        exp_ts = exp_dt.timestamp()
+    except Exception:
+        exp_ts = now_ts + 60
+    is_exp = now_ts >= exp_ts
+    time_rem = max(0, int(exp_ts - now_ts)) if not is_exp else 0
+
+    deact_str = None
+    grace_rem = 0
+    if entry and entry.deactivated_at:
+        deact_str = datetime.fromtimestamp(entry.deactivated_at, tz=timezone.utc).isoformat()
+        grace_window = GRACE_WINDOW_S if GRACE_WINDOW_S > 0 else 15
+        grace_rem = max(0, int((entry.deactivated_at + grace_window) - now_ts))
+
+    # Pull related audit logs for this session
+    audit_rows, _, _ = db.get_audit_log_paginated(limit=10, search=session_id)
+
+    return SessionDetailResponse(
+        session_id=sess["session_id"],
+        key_id=sess["key_id"],
+        device_id=sess["device_id"],
+        created_at=sess["created_at"],
+        expires_at=sess["expires_at"],
+        state=sess["state"],
+        msg_count=sess["msg_count"],
+        last_counter=sess["last_counter"],
+        next_expected_counter=sess["last_counter"] + 1,
+        is_expired=is_exp,
+        time_remaining_s=time_rem,
+        deactivated_at=deact_str,
+        grace_remaining_s=grace_rem,
+        in_transient_ram=entry is not None,
+        key_byte_length=32,
+        cipher_suite="AES-256-GCM (256-bit symmetric session key)",
+        kem_primitive=KEM_ALG,
+        sig_primitive=SIG_ALG,
+        kdf_primitive="HKDF-SHA256 (RFC 5869, context label: PQKMS-v1)",
+        device_status=device["status"] if device else "UNKNOWN",
+        device_role=device["role"] if device else "device",
+        audit_events=audit_rows,
+    )
+
+
+@router.post("/sessions/{session_id}/rotate", response_model=SessionActionResponse)
+@router.post("/api/sessions/{session_id}/rotate", response_model=SessionActionResponse)
+def rotate_session(session_id: str):
+    """
+    Force manual rotation of an active session key.
+    Transitions active key to DEACTIVATED grace state and audits the action.
+    """
+    lifecycle = get_lifecycle_manager()
+    try:
+        res = lifecycle.force_rotate_session(session_id)
+        return SessionActionResponse(
+            status="success",
+            session_id=session_id,
+            action="rotate",
+            message=res["message"],
+            details=res,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/sessions/{session_id}/deactivate", response_model=SessionActionResponse)
+@router.post("/api/sessions/{session_id}/deactivate", response_model=SessionActionResponse)
+def deactivate_session(session_id: str):
+    """
+    Transition an active session into DEACTIVATED decrypt-only grace mode.
+    """
+    lifecycle = get_lifecycle_manager()
+    db = get_db()
+    sess = db.get_session(session_id)
+    if sess is None:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+    lifecycle.deactivate_session(session_id)
+    db.update_session_state(session_id, "DEACTIVATED")
+    get_audit_logger().log(
+        actor="admin",
+        event_type="SESSION_DEACTIVATED",
+        outcome="ACCEPTED",
+        device_id=sess["device_id"],
+        details=f"session_id={session_id} reason=admin_manual_deactivate",
+    )
+    return SessionActionResponse(
+        status="success",
+        session_id=session_id,
+        action="deactivate",
+        message=f"Session {session_id[:8]}... transitioned to DEACTIVATED grace window.",
+        details={"state": "DEACTIVATED"},
+    )
+
+
+@router.post("/sessions/{session_id}/destroy", response_model=SessionActionResponse)
+@router.post("/api/sessions/{session_id}/destroy", response_model=SessionActionResponse)
+def destroy_session(session_id: str):
+    """
+    Immediately destroy session: zeroizes key bytes in transient RAM,
+    evicts key buffer, updates state to DESTROYED, and logs to forensic audit ledger.
+    """
+    lifecycle = get_lifecycle_manager()
+    try:
+        res = lifecycle.force_destroy_session(session_id)
+        return SessionActionResponse(
+            status="success",
+            session_id=session_id,
+            action="destroy",
+            message=res["message"],
+            details=res,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/sessions/bulk-rotate-expired", response_model=BulkSessionActionResponse)
+@router.post("/api/sessions/bulk-rotate-expired", response_model=BulkSessionActionResponse)
+def bulk_rotate_expired():
+    """
+    Trigger key rotation policy verification across all expired/exhausted sessions.
+    """
+    lifecycle = get_lifecycle_manager()
+    rotated = lifecycle.run_rotation_check(session_factory=lambda _: None)
+    count = len(rotated)
+    if count > 0:
+        msg = f"Key rotation enforced successfully. {count} expired session(s) transitioned to grace window."
+    else:
+        msg = "Key lifecycle verification complete. All active session keys are healthy and within their cryptoperiods."
+
+    return BulkSessionActionResponse(
+        status="success",
+        action="bulk_rotate",
+        affected_count=count,
+        message=msg,
+    )
+
+
+@router.post("/sessions/purge-destroyed", response_model=BulkSessionActionResponse)
+@router.post("/api/sessions/purge-destroyed", response_model=BulkSessionActionResponse)
+def purge_destroyed():
+    """
+    Purge metadata for all DESTROYED sessions from persistent store.
+    """
+    db = get_db()
+    count = db.purge_destroyed_sessions()
+    get_audit_logger().log(
+        actor="admin",
+        event_type="SESSIONS_PURGED",
+        outcome="ACCEPTED",
+        details=f"purged_destroyed_count={count}",
+    )
+    return BulkSessionActionResponse(
+        status="success",
+        action="purge_destroyed",
+        affected_count=count,
+        message=f"Purged {count} destroyed session audit records from persistent store.",
+    )
+
+
+@router.get("/sessions/memory-status")
+@router.get("/api/sessions/memory-status")
+def get_memory_status():
+    """
+    Return volatile RAM key isolation diagnostics.
+    """
+    lifecycle = get_lifecycle_manager()
+    return lifecycle.get_memory_status()
+
+
 # ─── Audit Log & Cryptographic Ledger Governance ───────────────────────────
 
 @router.get("/audit", response_model=AuditResponse)
@@ -479,7 +755,7 @@ def export_audit(format: str = "csv"):
         export_bundle = {
             "metadata": {
                 "system": "PQ-KMS Medical Biochip Cryptographic Management Platform",
-                "standard": "FDA 21 CFR Part 11 / NIST FIPS 203 / NIST FIPS 204",
+                "format": "Cryptographic Hash-Chained Forensic Ledger",
                 "exported_at": datetime.now(timezone.utc).isoformat(),
                 "total_records": len(rows),
                 "chain_valid": verification["is_valid"],

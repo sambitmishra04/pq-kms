@@ -1,19 +1,85 @@
-.venv/
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.env
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.cache
+.mypy_cache/
+.ruff_cache/
+
+# Databases & Runtime State
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
-.pytest_cache/
-*.egg-info/
-dist/
-!dashboard/react_ui/dist/
+*.sqlite
+*.sqlite3
+
+# Node & Frontend
 node_modules/
-build/
-.coverage
-htmlcov/
+frontend/dist/
+frontend/.vite/
+dashboard/react_ui/node_modules/
+!dashboard/react_ui/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+.stylelintcache
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# IDE & OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Logs & Temporary Files
 *.log
+*.tmp
